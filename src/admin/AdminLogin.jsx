@@ -9,7 +9,7 @@ export default function AdminLogin() {
   const { brand } = useSiteData();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("admin@adandecor.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -124,12 +124,6 @@ export default function AdminLogin() {
               )}
             </button>
           </form>
-
-          {/* Credentials helper for easy login */}
-          <div className="mt-8 p-4 bg-black/60 rounded-xl border border-white/5 text-center text-xs text-white/50 space-y-1">
-            <p className="font-bold text-[#D4AF37]/80">بيانات الحساب الرئيسي (Super Admin):</p>
-            <p className="dir-ltr text-white/70 font-mono">admin@adandecor.com / Adan12345</p>
-          </div>
         </div>
       </div>
     </div>
