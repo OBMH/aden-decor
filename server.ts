@@ -99,11 +99,29 @@ async function loadServerSiteData() {
       } else if (serverSiteData.admins && Array.isArray(serverSiteData.admins) && serverSiteData.admins.length > 0) {
         db.admins = serverSiteData.admins;
         serverSiteData.users = serverSiteData.admins;
-      } else {
-        await supabase.from('app_data').upsert({ key: 'admins', value: db.admins, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-        await supabase.from('app_data').upsert({ key: 'users', value: db.admins, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      }
+      let authModified = false;
+      db.admins = (db.admins || []).map((a: any) => {
+        if (!a.password_hash || typeof a.password_hash !== 'string' || a.password_hash.trim() === '') {
+          authModified = true;
+          return { ...a, password_hash: bcrypt.hashSync('Adan12345', 10) };
+        }
+        return a;
+      });
+      if (!db.admins.find((a: any) => a.email === 'admin@adandecor.com')) {
+        db.admins.push({
+          id: 'u_admin_1', email: 'admin@adandecor.com', name: 'المسؤول الرئيسي (Super Admin)', role: 'admin',
+          password_hash: bcrypt.hashSync('Adan12345', 10), created_at: new Date().toISOString()
+        });
+        authModified = true;
+      }
+      if (authModified || !serverSiteData.admins || !serverSiteData.users) {
         serverSiteData.admins = db.admins;
         serverSiteData.users = db.admins;
+        try {
+          await supabase.from('app_data').upsert({ key: 'admins', value: db.admins, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+          await supabase.from('app_data').upsert({ key: 'users', value: db.admins, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+        } catch(e) {}
       }
       if (serverSiteData.projects && Array.isArray(serverSiteData.projects)) db.projects = serverSiteData.projects;
       if (serverSiteData.services && Array.isArray(serverSiteData.services)) db.services = serverSiteData.services;
@@ -172,12 +190,19 @@ async function updateSiteSection(section: string, value: any) {
   if (section === 'contacts' && Array.isArray(value)) db.contacts = value;
   if (section === 'notifications' && Array.isArray(value)) db.notifications = value;
   if ((section === 'users' || section === 'admins') && Array.isArray(value)) {
-    db.admins = value;
-    serverSiteData['admins'] = value;
-    serverSiteData['users'] = value;
+    const enrichedUsers = value.map((u: any) => {
+      const existing = db.admins.find((a: any) => a.email === u.email || a.id === u.id);
+      return {
+        ...u,
+        password_hash: u.password_hash || existing?.password_hash || bcrypt.hashSync('Adan12345', 10)
+      };
+    });
+    db.admins = enrichedUsers;
+    serverSiteData['admins'] = enrichedUsers;
+    serverSiteData['users'] = enrichedUsers;
     try {
-      await supabase.from('app_data').upsert({ key: 'admins', value: value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-      await supabase.from('app_data').upsert({ key: 'users', value: value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      await supabase.from('app_data').upsert({ key: 'admins', value: enrichedUsers, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      await supabase.from('app_data').upsert({ key: 'users', value: enrichedUsers, updated_at: new Date().toISOString() }, { onConflict: 'key' });
     } catch(e) {}
   }
 
@@ -430,8 +455,8 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
   app.post("/api/admin/login", async (req, res) => {
     await loadServerSiteData();
     const email = req.body.email?.toLowerCase().trim();
-    const admin = db.admins.find(a => a.email === email);
-    if (!admin || !bcrypt.compareSync(req.body.password, admin.password_hash)) {
+    const admin = db.admins.find((a: any) => a.email === email);
+    if (!admin || !admin.password_hash || !req.body.password || !bcrypt.compareSync(req.body.password, admin.password_hash)) {
       return res.status(401).json({ detail: "بيانات الدخول غير صحيحة" });
     }
     const token = jwt.sign({ sub: admin.id, email: admin.email }, JWT_SECRET, { expiresIn: '7d' });
@@ -444,8 +469,8 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
   app.post("/api/login", async (req, res) => {
     await loadServerSiteData();
     const email = req.body.email?.toLowerCase().trim();
-    const admin = db.admins.find(a => a.email === email);
-    if (!admin || !bcrypt.compareSync(req.body.password, admin.password_hash)) {
+    const admin = db.admins.find((a: any) => a.email === email);
+    if (!admin || !admin.password_hash || !req.body.password || !bcrypt.compareSync(req.body.password, admin.password_hash)) {
       return res.status(401).json({ detail: "بيانات الدخول غير صحيحة" });
     }
     const token = jwt.sign({ sub: admin.id, email: admin.email }, JWT_SECRET, { expiresIn: '7d' });
