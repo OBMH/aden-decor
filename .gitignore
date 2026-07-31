@@ -1,12 +1,8 @@
 node_modules/
 build/
-dist/
 coverage/
 .DS_Store
 *.log
 .env*
 !.env.example
-api/*.bundle.*
-*.map
 _test_bundle.cjs
-server.cjs
