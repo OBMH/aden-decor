@@ -10,23 +10,34 @@ import {
   X,
   PlusCircle,
   FolderOpen,
-  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   Calendar,
   MapPin,
   Clock,
   Layers,
-  Sparkles
+  Sparkles,
+  Link as LinkIcon
 } from "lucide-react";
 import { toast } from "sonner";
 import { useSiteData } from "../contexts/SiteContext";
 import { MediaPickerModal } from "../components/MediaPickerModal";
 import SafeImage from "../components/SafeImage";
 
+// ── التطابق المطلق مع أقسام وتصنيفات الموقع الفعلي (Portfolio.jsx) ──
 const CATEGORIES = [
-  { id: "interior", label: "التصميم والديكور الداخلي" },
+  { id: "villas", label: "الفلل" },
+  { id: "apartments", label: "الشقق السكنية" },
+  { id: "majlis", label: "المجالس" },
+  { id: "offices", label: "المكاتب" },
+  { id: "commercial", label: "المشاريع التجارية" },
+  { id: "medical", label: "المشاريع الطبية" },
+  { id: "interior", label: "ديكورات واعمال داخلية" },
+  { id: "bedrooms", label: "غرف نوم" },
+  { id: "kitchens", label: "المطابخ" },
+  // حفظ التوافق مع أي مشاريع قديمة
   { id: "aluminum", label: "أعمال الألمنيوم والواجهات" },
   { id: "carpentry", label: "النجارة والأعمال الخشبية" },
-  { id: "commercial", label: "المشاريع التجارية والطبية" },
   { id: "construction", label: "العوازل والترميم الإنشائي" },
 ];
 
@@ -47,13 +58,14 @@ export default function AdminProjects() {
   function getEmptyForm() {
     return {
       title: "",
-      category: "interior",
-      category_label: "التصميم والديكور الداخلي",
+      category: "majlis",
+      category_label: "المجالس",
+      categoryLabel: "المجالس",
       description: "",
       location: "عدن — اليمن",
       execution_time: "شهرين",
       year: new Date().getFullYear().toString(),
-      status: "completed", // 'completed' | 'in_progress'
+      status: "completed",
       image: "",
       gallery: [],
       materials_used: ["بديل الرخام الفاخر", "إضاءة ليد مخفية", "أخشاب معالجة"],
@@ -69,9 +81,14 @@ export default function AdminProjects() {
 
   const handleOpenEdit = (project) => {
     setEditingProject(project);
+    const catId = project.category || "majlis";
+    const foundCat = CATEGORIES.find((c) => c.id === catId) || CATEGORIES[0];
     setFormData({
       ...getEmptyForm(),
       ...project,
+      category: catId,
+      category_label: project.category_label || project.categoryLabel || foundCat.label,
+      categoryLabel: project.categoryLabel || project.category_label || foundCat.label,
       gallery: Array.isArray(project.gallery) ? [...project.gallery] : [],
       materials_used: Array.isArray(project.materials_used) ? [...project.materials_used] : [],
     });
@@ -85,11 +102,13 @@ export default function AdminProjects() {
       return;
     }
 
-    // Assign correct category_label based on category ID
     const catObj = CATEGORIES.find((c) => c.id === formData.category) || CATEGORIES[0];
+    const finalLabel = formData.category_label?.trim() || catObj.label;
+
     const cleanData = {
       ...formData,
-      category_label: catObj.label,
+      category_label: finalLabel,
+      categoryLabel: finalLabel, // توحيد التسمية لتطابق الواجهة الأمامية تماماً
       order: Number(formData.order) || 1,
     };
 
@@ -109,6 +128,23 @@ export default function AdminProjects() {
       deleteProject(id);
       toast.success("تم حذف المشروع من المعرض");
     }
+  };
+
+  const handleMoveOrder = (project, direction) => {
+    const sorted = [...projects].sort((a, b) => (a.order || 0) - (b.order || 0));
+    const idx = sorted.findIndex((p) => p.id === project.id);
+    if (idx < 0) return;
+
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= sorted.length) return;
+
+    const targetProject = sorted[targetIdx];
+    const currentOrder = project.order || (idx + 1);
+    const targetOrder = targetProject.order || (targetIdx + 1);
+
+    updateProject(project.id, { ...project, order: targetOrder });
+    updateProject(targetProject.id, { ...targetProject, order: currentOrder });
+    toast.success("تم إعادة ترتيب ومكان عرض الصورة والمشروع بنجاح!");
   };
 
   const handleImageSelected = (url) => {
@@ -145,12 +181,13 @@ export default function AdminProjects() {
     }));
   };
 
-  // Filter projects
+  // Filter & sort projects
   const sortedProjects = [...projects].sort((a, b) => (a.order || 0) - (b.order || 0));
   const filteredProjects = sortedProjects.filter((p) => {
     const matchSearch =
       (p.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.location || "").toLowerCase().includes(searchTerm.toLowerCase());
+      (p.location || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.category_label || "").toLowerCase().includes(searchTerm.toLowerCase());
     if (!matchSearch) return false;
     if (selectedCategory !== "all" && p.category !== selectedCategory) return false;
     return true;
@@ -159,17 +196,17 @@ export default function AdminProjects() {
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header Banner */}
-      <div className="bg-[#111] border border-[#D4AF37]/30 p-6 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-[#111] border border-[#D4AF37]/30 p-6 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
         <div>
           <div className="flex items-center gap-2 text-[#D4AF37] text-xs font-bold uppercase tracking-wide mb-1">
             <Briefcase size={16} />
-            <span>إدارة وتعديل معرض المشاريع والتحف المعمارية</span>
+            <span>إدارة وتعديل معرض المشاريع — مطابق بالكامل لتصنيفات ومظهر الموقع</span>
           </div>
           <h2 className="font-display text-2xl font-bold text-white">
             معرض الأعمال والمشاريع ({projects.length})
           </h2>
           <p className="text-white/60 text-sm mt-1">
-            أضف وحدث مشاريع المؤسسة والصور التابعة لها لتعرض بأفضل صورة أمام العملاء. التعديل يتم فوراً بقاعدة البيانات.
+            عدّل الكلام، الصور، مسار ومكان العرض، والقسم ليتطابق فورياً مع ما يراه العميل على الموقع المباشر.
           </p>
         </div>
 
@@ -187,7 +224,7 @@ export default function AdminProjects() {
         <div className="relative w-full sm:w-80">
           <input
             type="text"
-            placeholder="ابحث باسم المشروع أو الموقع..."
+            placeholder="ابحث باسم المشروع، القسم، أو الموقع..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-lg pr-10 pl-4 py-2.5 text-sm focus:outline-none focus:border-[#D4AF37]"
@@ -202,10 +239,12 @@ export default function AdminProjects() {
               selectedCategory === "all" ? "bg-[#D4AF37] text-black" : "bg-black text-white/70 hover:text-white border border-white/10"
             }`}
           >
-            جميع التصنيفات ({projects.length})
+            جميع الأقسام ({projects.length})
           </button>
           {CATEGORIES.map((cat) => {
             const count = projects.filter((p) => p.category === cat.id).length;
+            // لا نخفي الأقسام الرئيسية بل نعرضها ليتسنى للإدارة رؤيتها بوضوح
+            if (count === 0 && ["aluminum", "carpentry", "construction"].includes(cat.id)) return null;
             return (
               <button
                 key={cat.id}
@@ -226,11 +265,11 @@ export default function AdminProjects() {
         <div className="bg-[#111] border border-[#D4AF37]/20 rounded-xl p-12 text-center text-white/50">
           <FolderOpen size={56} className="mx-auto text-[#D4AF37]/30 mb-3" />
           <h3 className="text-lg font-bold text-white mb-1">لا توجد مشاريع مطابقة</h3>
-          <p className="text-xs text-white/40">جرب تعديل عبارة البحث أو اختر تصنيفاً آخر، أو انقر على "إضافة مشروع جديد".</p>
+          <p className="text-xs text-white/40">جرب تعديل عبارة البحث أو اختر قسماً آخر، أو انقر على "إضافة مشروع جديد".</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
+          {filteredProjects.map((project, index) => (
             <div
               key={project.id}
               className="bg-[#111] border border-[#D4AF37]/20 hover:border-[#D4AF37] rounded-xl overflow-hidden transition-all duration-300 flex flex-col justify-between group hover:shadow-[0_0_25px_rgba(212,175,55,0.15)]"
@@ -239,18 +278,40 @@ export default function AdminProjects() {
                 {/* Image Cover */}
                 <div className="aspect-video relative overflow-hidden bg-black">
                   <SafeImage
-                    src={project.image}
+                    src={project.image || project.coverImage}
                     alt={project.title}
                     fallbackType="portfolio"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute top-3 right-3 flex gap-2">
                     <span className="bg-black/80 backdrop-blur-md border border-[#D4AF37]/40 text-[#D4AF37] text-[11px] font-bold px-3 py-1 rounded-full shadow-lg">
-                      {project.category_label || project.category}
+                      {project.categoryLabel || project.category_label || project.category}
                     </span>
                   </div>
-                  <div className="absolute bottom-3 left-3 bg-black/70 text-white text-[10px] px-2 py-1 rounded border border-white/10 font-mono">
-                    ترتيب: #{project.order}
+
+                  {/* الترتيب والتحكم الفوري بمكان الصورة بالعرض */}
+                  <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/85 p-1 rounded-lg border border-white/15">
+                    <span className="text-[11px] text-[#D4AF37] px-2 font-mono font-bold">
+                      مكان العرض: #{project.order || index + 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleMoveOrder(project, 'up')}
+                      disabled={index === 0}
+                      title="نقل لتقديم مكان العرض (للأعلى)"
+                      className="p-1 text-white hover:bg-[#D4AF37] hover:text-black rounded disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white transition-colors"
+                    >
+                      <ArrowUp size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleMoveOrder(project, 'down')}
+                      disabled={index === filteredProjects.length - 1}
+                      title="نقل لتأخير مكان العرض (للأسفل)"
+                      className="p-1 text-white hover:bg-[#D4AF37] hover:text-black rounded disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white transition-colors"
+                    >
+                      <ArrowDown size={14} />
+                    </button>
                   </div>
                 </div>
 
@@ -308,10 +369,10 @@ export default function AdminProjects() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleOpenEdit(project)}
-                    className="p-2 bg-[#D4AF37]/10 hover:bg-[#D4AF37] text-[#D4AF37] hover:text-black border border-[#D4AF37]/30 rounded-lg transition-all text-xs font-bold flex items-center gap-1.5"
-                    title="تعديل المشروع"
+                    className="p-2 px-3 bg-[#D4AF37]/10 hover:bg-[#D4AF37] text-[#D4AF37] hover:text-black border border-[#D4AF37]/30 rounded-lg transition-all text-xs font-bold flex items-center gap-1.5 shadow"
+                    title="تعديل الكلام، الصور، القسم ومكان الصورة"
                   >
-                    <Edit2 size={15} /> تعديل
+                    <Edit2 size={15} /> تعديل شامل
                   </button>
                   <button
                     onClick={() => handleDelete(project.id, project.title)}
@@ -342,9 +403,9 @@ export default function AdminProjects() {
                 </div>
                 <div>
                   <h3 className="font-display font-bold text-lg text-white">
-                    {editingProject ? `تعديل المشروع: ${editingProject.title}` : "إضافة مشروع ديكور جديد"}
+                    {editingProject ? `تعديل مشروع: ${editingProject.title}` : "إضافة مشروع ديكور جديد"}
                   </h3>
-                  <p className="text-white/50 text-xs">قم بتعبئة تفاصيل المشروع ليعرض بالواجهة الأمامية للموقع</p>
+                  <p className="text-white/50 text-xs">تعديل الكلام، الصور، مسار ومكان الصورة، والقسم المخصص للعرض في الموقع</p>
                 </div>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="text-white/50 hover:text-white p-1">
@@ -354,37 +415,62 @@ export default function AdminProjects() {
 
             {/* Modal Body */}
             <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              
+              {/* القسم والاسم (Title & Category) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-black/40 p-4 rounded-xl border border-white/10">
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-white/80 mb-2">
-                    اسم المشروع <span className="text-[#D4AF37]">*</span>:
+                  <label className="block text-xs font-bold text-white/90 mb-2">
+                    اسم المشروع / العنوان الرئيسي <span className="text-[#D4AF37]">*</span>:
                   </label>
                   <input
                     type="text"
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-lg p-3 text-sm focus:outline-none focus:border-[#D4AF37]"
-                    placeholder="مثال: فيلا سكنية فاخرة — حي السعد"
+                    className="w-full bg-black border border-[#D4AF37]/40 text-white rounded-lg p-3 text-sm focus:outline-none focus:border-[#D4AF37]"
+                    placeholder="مثال: مجلس كلاسيكي فاخر — حي السعد"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-white/80 mb-2">التصنيف الهندسـي:</label>
+                  <label className="block text-xs font-bold text-[#D4AF37] mb-2">القسم بالموقع (Category):</label>
                   <select
                     value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-lg p-3 text-sm focus:outline-none focus:border-[#D4AF37]"
+                    onChange={(e) => {
+                      const selectedId = e.target.value;
+                      const found = CATEGORIES.find(c => c.id === selectedId);
+                      setFormData({
+                        ...formData,
+                        category: selectedId,
+                        category_label: found ? found.label : formData.category_label,
+                        categoryLabel: found ? found.label : formData.categoryLabel
+                      });
+                    }}
+                    className="w-full bg-black border border-[#D4AF37]/40 text-white rounded-lg p-3 text-sm focus:outline-none focus:border-[#D4AF37] font-bold"
                   >
                     {CATEGORIES.map((c) => (
                       <option key={c.id} value={c.id}>{c.label}</option>
                     ))}
                   </select>
+                  <p className="text-[10px] text-white/50 mt-1">يطابق الأقسام الـ 9 الرسمية في الموقع.</p>
                 </div>
               </div>
 
+              {/* تخصيص اسم القسم الظاهر */}
               <div>
-                <label className="block text-xs font-bold text-white/80 mb-2">وصف تفصيلي للمشروع والأعمال المنفذة:</label>
+                <label className="block text-xs font-bold text-white/80 mb-2">النص المكتوب للقسم أعلى عنوان المشروع في البوتقة (Category Label):</label>
+                <input
+                  type="text"
+                  value={formData.category_label || ""}
+                  onChange={(e) => setFormData({ ...formData, category_label: e.target.value, categoryLabel: e.target.value })}
+                  className="w-full bg-black border border-white/20 text-white rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#D4AF37]"
+                  placeholder="مثال: المجالس الفاخرة"
+                />
+              </div>
+
+              {/* وصف المشروع (Description) */}
+              <div>
+                <label className="block text-xs font-bold text-white/90 mb-2">الكلام / الوصف التفصيلي للمشروع (Description):</label>
                 <textarea
                   rows={3}
                   value={formData.description || ""}
@@ -394,10 +480,66 @@ export default function AdminProjects() {
                 />
               </div>
 
+              {/* مكان الصورة ومسارها وترتيبها (Image Location, Path, Order & Specs) */}
+              <div className="p-4 bg-black/60 border border-[#D4AF37]/30 rounded-xl space-y-4">
+                <h4 className="text-xs font-bold text-[#D4AF37] uppercase flex items-center gap-2 border-b border-white/10 pb-2">
+                  <LinkIcon size={16} />
+                  <span>إدارة الصورة ومكانها وترتيب العرض بالموقع</span>
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-white/80 mb-1.5">مسار أو رابط الصورة (Image Path/URL):</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={formData.image || ""}
+                        onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                        className="w-full bg-[#151515] border border-white/20 text-white text-xs rounded-lg p-2.5 font-mono dir-ltr"
+                        placeholder="/uploads/img_12345.jpg أو رابط خارجي"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setMediaTarget("cover")}
+                        className="bg-[#D4AF37] text-black px-3.5 py-2.5 rounded-lg font-bold text-xs hover:bg-[#C5A030] transition-colors flex items-center gap-1 shrink-0 shadow-md"
+                      >
+                        <ImageIcon size={14} /> اختيار/رفع
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-white/40 mt-1">يمكنك إدخال مسار الصورة مباشرة، أو النقر على "اختيار/رفع" من جهازك أو الألبوم.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#D4AF37] mb-1.5">مكان الصورة / الترتيب بالعرض:</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={formData.order || 1}
+                      onChange={(e) => setFormData({ ...formData, order: Number(e.target.value) })}
+                      className="w-full bg-[#151515] border border-[#D4AF37]/40 text-white font-bold rounded-lg p-2.5 text-xs dir-ltr text-center"
+                    />
+                    <p className="text-[10px] text-white/50 mt-1 text-center">الرقم الأقل (1) يظهر أولاً في مقدمة الموقع.</p>
+                  </div>
+                </div>
+
+                {/* معاينة صورة الغلاف */}
+                {formData.image && (
+                  <div className="flex items-center gap-4 pt-2 border-t border-white/5">
+                    <div className="w-20 h-16 rounded-lg overflow-hidden border border-white/20 bg-black shrink-0">
+                      <SafeImage src={formData.image} alt="cover preview" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="text-xs text-white/70">
+                      <span className="text-green-400 font-bold block">✓ الصورة جاهزة ومربوطة بالمشروع</span>
+                      <span className="text-[11px] text-white/40 font-mono break-all">{formData.image}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Specs Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-black/50 border border-white/10 rounded-xl">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-black/40 border border-white/10 rounded-xl">
                 <div>
-                  <label className="block text-xs font-bold text-white/70 mb-1.5">موقع التنفيذ:</label>
+                  <label className="block text-xs font-bold text-white/70 mb-1.5">موقع التنفيذ (Location):</label>
                   <input
                     type="text"
                     value={formData.location || ""}
@@ -407,7 +549,7 @@ export default function AdminProjects() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-white/70 mb-1.5">مدة التنفيذ:</label>
+                  <label className="block text-xs font-bold text-white/70 mb-1.5">مدة التنفيذ (Duration):</label>
                   <input
                     type="text"
                     value={formData.execution_time || ""}
@@ -417,7 +559,7 @@ export default function AdminProjects() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-white/70 mb-1.5">سنة الإنجاز:</label>
+                  <label className="block text-xs font-bold text-white/70 mb-1.5">سنة الإنجاز (Year):</label>
                   <input
                     type="text"
                     value={formData.year || ""}
@@ -425,42 +567,6 @@ export default function AdminProjects() {
                     className="w-full bg-[#151515] border border-white/10 text-white rounded p-2 text-xs"
                     placeholder="2025"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-white/70 mb-1.5">الترتيب بالمعرض:</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={formData.order || 1}
-                    onChange={(e) => setFormData({ ...formData, order: Number(e.target.value) })}
-                    className="w-full bg-[#151515] border border-white/10 text-white rounded p-2 text-xs dir-ltr text-center"
-                  />
-                </div>
-              </div>
-
-              {/* Cover Image Selector */}
-              <div>
-                <label className="block text-xs font-bold text-[#D4AF37] mb-2">
-                  صورة غلاف المشروع (Cover Image):
-                </label>
-                <div className="flex items-center gap-4 bg-black p-3 rounded-xl border border-white/10">
-                  <div className="w-24 h-24 rounded-lg bg-[#111] border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
-                    {formData.image ? (
-                      <SafeImage src={formData.image} alt="cover" className="w-full h-full object-cover" />
-                    ) : (
-                      <ImageIcon size={28} className="text-white/30" />
-                    )}
-                  </div>
-                  <div className="space-y-2 flex-1">
-                    <button
-                      type="button"
-                      onClick={() => setMediaTarget("cover")}
-                      className="bg-[#D4AF37] text-black px-4 py-2 rounded font-bold text-xs hover:bg-[#C5A030] transition-colors flex items-center gap-1.5 shadow-md"
-                    >
-                      <ImageIcon size={14} /> {formData.image ? "تغيير صورة الغلاف" : "اختيار صورة الغلاف"}
-                    </button>
-                    <p className="text-[11px] text-white/50">تظهر هذه الصورة بشكل بارز في بطاقات المعرض الرئيسية في الموقع.</p>
-                  </div>
                 </div>
               </div>
 
@@ -481,7 +587,7 @@ export default function AdminProjects() {
 
                 <div className="p-4 bg-black rounded-xl border border-white/10 min-h-[90px] flex flex-wrap gap-3 items-center">
                   {formData.gallery.length === 0 ? (
-                    <span className="text-xs text-white/40 italic mx-auto">لا توجد صور في ألبوم المشروع حتى الآن. انقر على "إضافة صور للألبوم" أعلاه.</span>
+                    <span className="text-xs text-white/40 italic mx-auto">لا توجد صور إضافية في ألبوم المشروع حتى الآن. انقر على "إضافة صور للألبوم" أعلاه.</span>
                   ) : (
                     formData.gallery.map((imgUrl, idx) => (
                       <div key={idx} className="w-20 h-20 rounded-lg overflow-hidden bg-[#151515] border border-[#D4AF37]/30 relative group">
@@ -546,7 +652,7 @@ export default function AdminProjects() {
                   className="px-6 py-2.5 bg-[#D4AF37] hover:bg-[#C5A030] text-black rounded-lg text-sm font-bold transition-all shadow-[0_0_15px_rgba(212,175,55,0.3)] flex items-center gap-2"
                 >
                   <Check size={18} />
-                  <span>{editingProject ? "حفظ التعديلات" : "إعتماد وإضافة المشروع"}</span>
+                  <span>{editingProject ? "حفظ وتطبيق التعديلات فوراً" : "إعتماد وإضافة المشروع"}</span>
                 </button>
               </div>
             </form>
