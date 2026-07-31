@@ -311,7 +311,7 @@
         "/assets/images/insulation_card_bg_1784517415029.jpg",
         "/assets/images/insulation_card_bg_1784517415029.jpg"
       ],
-      "category": "medical",
+      "category": "aluminum",
       "featured": false,
       "materials": [
         "أرضيات إيبوكسي",
@@ -319,7 +319,14 @@
         "عزل صوتي"
       ],
       "description": "تنفيذ وتجهيز عيادة أسنان وفق الاشتراطات الصحية مع التركيز على بيئة مريحة للمرضى.",
-      "categoryLabel": "مشاريع طبية"
+      "categoryLabel": "مشاريع طبية",
+      "category_label": "أعمال الألمنيوم والواجهات",
+      "location": "عدن — اليمن",
+      "execution_time": "شهرين",
+      "year": "2026",
+      "status": "completed",
+      "materials_used": [],
+      "order": 13
     },
     {
       "id": 7,
@@ -442,7 +449,8 @@
       "name": "المسؤول الرئيسي (Super Admin)",
       "role": "admin",
       "email": "admin@adandecor.com",
-      "created_at": "2026-07-31T01:28:21.692Z"
+      "created_at": "2026-07-31T01:28:21.692Z",
+      "password_hash": "$2b$10$zb00zjFxnJO9VZ6gBSeBLOxqraqr2MLNe2GJFyRDvIPDjaG4Npquq"
     }
   ],
   "assetMap": {},
@@ -534,7 +542,7 @@
       "subtitle": "استعرض أبرز المشاريع والتحف الفنية التي نفذناها للفلل والمجالس والمشاريع التجارية."
     }
   },
-  "last_updated": "2026-07-31T01:16:31.984Z",
+  "last_updated": "2026-07-31T23:22:17.177Z",
   "cloud_sync_info": {
     "status": "Active",
     "provider": "Supabase PostgreSQL",
@@ -617,6 +625,16 @@
       "data_url": "/src/assets/images/insulation_card_bg_1784517415029.jpg",
       "filename": "insulation_card_bg.jpg",
       "uploaded_at": "2026-07-23T03:11:51.384Z"
+    }
+  ],
+  "admins": [
+    {
+      "id": "u_admin_1",
+      "name": "المسؤول الرئيسي (Super Admin)",
+      "role": "admin",
+      "email": "admin@adandecor.com",
+      "created_at": "2026-07-31T01:28:21.692Z",
+      "password_hash": "$2b$10$zb00zjFxnJO9VZ6gBSeBLOxqraqr2MLNe2GJFyRDvIPDjaG4Npquq"
     }
   ]
 }
