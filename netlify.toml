@@ -5,7 +5,7 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
-  included_files = ["api/server.bundle.cjs"]
+  external_node_modules = ["vite", "esbuild", "lightningcss", "@tailwindcss/vite", "@vitejs/plugin-react", "tsx", "playwright"]
 
 [[redirects]]
   from = "/api/*"
