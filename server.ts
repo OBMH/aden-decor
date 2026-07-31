@@ -17,7 +17,7 @@ const DATA_FILE_PATH = path.join(process.cwd(), 'site_data.json');
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
 
 // Ensure uploads directory exists if not running in read-only serverless
-if (!process.env.VERCEL) {
+if (!process.env.VERCEL && !process.env.NETLIFY && !process.env.AWS_LAMBDA_FUNCTION_NAME && !process.env.SERVERLESS) {
   try {
     if (!fs.existsSync(UPLOADS_DIR)) {
       fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -553,7 +553,7 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
   });
 
   // ── Vite middleware for development ──
-  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL && !process.env.NETLIFY && !process.env.AWS_LAMBDA_FUNCTION_NAME && !process.env.SERVERLESS) {
     import("vite").then(({ createServer: createViteServer }) => {
       createViteServer({
         server: { middlewareMode: true },
@@ -562,7 +562,7 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
         app.use(vite.middlewares);
       });
     }).catch(err => console.error("Vite init error:", err));
-  } else if (!process.env.VERCEL) {
+  } else if (!process.env.VERCEL && !process.env.NETLIFY && !process.env.AWS_LAMBDA_FUNCTION_NAME && !process.env.SERVERLESS) {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath, { maxAge: '1y', setHeaders: (res, filePath) => { if (filePath.includes('/assets/')) { res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); } } }));
     app.get('*', (req, res) => {
@@ -570,7 +570,7 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
     });
   }
 
-  if (!process.env.VERCEL) {
+  if (!process.env.VERCEL && !process.env.NETLIFY && !process.env.AWS_LAMBDA_FUNCTION_NAME && !process.env.SERVERLESS) {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on port ${PORT}`);
     });
