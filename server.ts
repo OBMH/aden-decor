@@ -5,31 +5,30 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import multer from 'multer';
-import { createClient } from '@supabase/supabase-js';
-
-// ── Supabase Cloud Connection ──
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://skezarquinduqpmhehwq.supabase.co';
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrZXphcnF1aW5kdXFwbWhlaHdxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NTQ1NTA0OCwiZXhwIjoyMTAxMDMxMDQ4fQ.TGAooofVA7dZ0d1ZTisk2qYPE5nnl3zStGNGba5gCfQ';
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 const DATA_FILE_PATH = path.join(process.cwd(), 'site_data.json');
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
 
-// Ensure uploads directory exists if not running in read-only serverless
-if (!process.env.VERCEL && !process.env.NETLIFY && !process.env.AWS_LAMBDA_FUNCTION_NAME && !process.env.SERVERLESS) {
-  try {
-    if (!fs.existsSync(UPLOADS_DIR)) {
-      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-    }
-  } catch (e) {}
-}
+try {
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+} catch (e) {}
 
-// ── Multer config for cloud uploads (memory storage) ──
-const storage = multer.memoryStorage();
+// ── Multer config for local filesystem storage ──
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, UPLOADS_DIR);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, `img_${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`);
+  }
+});
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true);
     else cb(new Error('Only image files allowed'));
@@ -82,74 +81,53 @@ Object.entries(defaultSettings).forEach(([key, value]) => {
   db.settings.push({ key, value, updated_at: new Date().toISOString() });
 });
 
-// ── Persistent site data store (Supabase Cloud + Local Fallback) ──
+// ── Persistent site data store (Local JSON File) ──
 let serverSiteData: any = null;
 
 async function loadServerSiteData() {
-  try {
-    const { data: rows, error } = await supabase.from('app_data').select('*');
-    if (!error && rows && rows.length > 0) {
-      serverSiteData = {};
-      rows.forEach(row => {
-        serverSiteData[row.key] = row.value;
-      });
-      if (serverSiteData.users && Array.isArray(serverSiteData.users) && serverSiteData.users.length > 0) {
-        db.admins = serverSiteData.users;
-        serverSiteData.admins = serverSiteData.users;
-      } else if (serverSiteData.admins && Array.isArray(serverSiteData.admins) && serverSiteData.admins.length > 0) {
-        db.admins = serverSiteData.admins;
-        serverSiteData.users = serverSiteData.admins;
-      }
-      let authModified = false;
-      db.admins = (db.admins || []).map((a: any) => {
-        if (!a.password_hash || typeof a.password_hash !== 'string' || a.password_hash.trim() === '') {
-          authModified = true;
-          return { ...a, password_hash: bcrypt.hashSync('Adan12345', 10) };
-        }
-        return a;
-      });
-      if (!db.admins.find((a: any) => a.email === 'admin@adandecor.com')) {
-        db.admins.push({
-          id: 'u_admin_1', email: 'admin@adandecor.com', name: 'المسؤول الرئيسي (Super Admin)', role: 'admin',
-          password_hash: bcrypt.hashSync('Adan12345', 10), created_at: new Date().toISOString()
-        });
-        authModified = true;
-      }
-      if (authModified || !serverSiteData.admins || !serverSiteData.users) {
-        serverSiteData.admins = db.admins;
-        serverSiteData.users = db.admins;
-        try {
-          await supabase.from('app_data').upsert({ key: 'admins', value: db.admins, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-          await supabase.from('app_data').upsert({ key: 'users', value: db.admins, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-        } catch(e) {}
-      }
-      if (serverSiteData.projects && Array.isArray(serverSiteData.projects)) db.projects = serverSiteData.projects;
-      if (serverSiteData.services && Array.isArray(serverSiteData.services)) db.services = serverSiteData.services;
-      if (serverSiteData.testimonials && Array.isArray(serverSiteData.testimonials)) db.testimonials = serverSiteData.testimonials;
-      if (serverSiteData.media && Array.isArray(serverSiteData.media)) db.media = serverSiteData.media;
-      if (serverSiteData.contacts && Array.isArray(serverSiteData.contacts)) db.contacts = serverSiteData.contacts;
-      if (serverSiteData.notifications && Array.isArray(serverSiteData.notifications)) db.notifications = serverSiteData.notifications;
-      console.log("☁️ [Supabase Sync] Site data successfully loaded from Supabase Cloud Database!");
-      try { fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(serverSiteData, null, 2), 'utf-8'); } catch(e){}
-      return;
-    } else if (!error && (!rows || rows.length === 0)) {
-      await supabase.from('app_data').upsert({ key: 'admins', value: db.admins, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-      await supabase.from('app_data').upsert({ key: 'users', value: db.admins, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-    }
-  } catch (err) {
-    console.warn("⚠️ [Supabase Warn] Could not connect to Supabase on boot, trying local backup...", err);
-  }
-
   try {
     if (fs.existsSync(DATA_FILE_PATH)) {
       const raw = fs.readFileSync(DATA_FILE_PATH, 'utf-8');
       if (raw.trim().length > 2) {
         serverSiteData = JSON.parse(raw);
-        console.log("📂 [Local Storage] Loaded site data from local file backup.");
+        console.log("📂 [Local Storage] Loaded site data successfully from site_data.json.");
+        if (serverSiteData.users && Array.isArray(serverSiteData.users) && serverSiteData.users.length > 0) {
+          db.admins = serverSiteData.users;
+          serverSiteData.admins = serverSiteData.users;
+        } else if (serverSiteData.admins && Array.isArray(serverSiteData.admins) && serverSiteData.admins.length > 0) {
+          db.admins = serverSiteData.admins;
+          serverSiteData.users = serverSiteData.admins;
+        }
+        let authModified = false;
+        db.admins = (db.admins || []).map((a: any) => {
+          if (!a.password_hash || typeof a.password_hash !== 'string' || a.password_hash.trim() === '') {
+            authModified = true;
+            return { ...a, password_hash: bcrypt.hashSync('Adan12345', 10) };
+          }
+          return a;
+        });
+        if (!db.admins.find((a: any) => a.email === 'admin@adandecor.com')) {
+          db.admins.push({
+            id: 'u_admin_1', email: 'admin@adandecor.com', name: 'المسؤول الرئيسي (Super Admin)', role: 'admin',
+            password_hash: bcrypt.hashSync('Adan12345', 10), created_at: new Date().toISOString()
+          });
+          authModified = true;
+        }
+        if (authModified || !serverSiteData.admins || !serverSiteData.users) {
+          serverSiteData.admins = db.admins;
+          serverSiteData.users = db.admins;
+          try { fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(serverSiteData, null, 2), 'utf-8'); } catch(e){}
+        }
+        if (serverSiteData.projects && Array.isArray(serverSiteData.projects)) db.projects = serverSiteData.projects;
+        if (serverSiteData.services && Array.isArray(serverSiteData.services)) db.services = serverSiteData.services;
+        if (serverSiteData.testimonials && Array.isArray(serverSiteData.testimonials)) db.testimonials = serverSiteData.testimonials;
+        if (serverSiteData.media && Array.isArray(serverSiteData.media)) db.media = serverSiteData.media;
+        if (serverSiteData.contacts && Array.isArray(serverSiteData.contacts)) db.contacts = serverSiteData.contacts;
+        if (serverSiteData.notifications && Array.isArray(serverSiteData.notifications)) db.notifications = serverSiteData.notifications;
       }
     }
-  } catch (e) {
-    console.error("Failed to load site_data.json:", e);
+  } catch (err) {
+    console.error("Failed to load site_data.json:", err);
   }
 }
 
@@ -163,18 +141,9 @@ async function saveServerSiteData(data: any) {
     } catch (e) {
       try { fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(serverSiteData, null, 2), 'utf-8'); } catch (e2) {}
     }
-
-    const keys = Object.keys(serverSiteData);
-    for (const key of keys) {
-      await supabase.from('app_data').upsert({
-        key: key,
-        value: serverSiteData[key],
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'key' });
-    }
-    console.log("☁️ [Supabase Sync] Database fully synced to Supabase Cloud!");
+    console.log("💾 [Local Storage] Database saved cleanly to site_data.json!");
   } catch (e) {
-    console.error("⚠️ [Supabase Sync Error]:", e);
+    console.error("⚠️ [Save Error]:", e);
   }
 }
 
@@ -200,25 +169,13 @@ async function updateSiteSection(section: string, value: any) {
     db.admins = enrichedUsers;
     serverSiteData['admins'] = enrichedUsers;
     serverSiteData['users'] = enrichedUsers;
-    try {
-      await supabase.from('app_data').upsert({ key: 'admins', value: enrichedUsers, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-      await supabase.from('app_data').upsert({ key: 'users', value: enrichedUsers, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-    } catch(e) {}
   }
 
   try {
     fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(serverSiteData, null, 2), 'utf-8');
-  } catch (e) {}
-
-  try {
-    await supabase.from('app_data').upsert({
-      key: section,
-      value: value,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'key' });
-    console.log(`⚡ [Supabase Cloud] Section "${section}" synced instantly!`);
+    console.log(`💾 [Local Storage] Section "${section}" updated instantly in site_data.json!`);
   } catch (e) {
-    console.error(`⚠️ [Supabase Error on section "${section}"]:`, e);
+    console.error(`⚠️ [Save Error on section "${section}"]:`, e);
   }
 }
 
@@ -336,32 +293,15 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
     res.json({ ok: true, count: req.body.length });
   });
 
-  // ── File Upload endpoint (Supabase Cloud Storage) ──
+  // ── File Upload endpoint (Local Filesystem Storage) ──
   app.post("/api/upload", upload.single('file'), async (req: any, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
     try {
-      const ext = path.extname(req.file.originalname) || '.jpg';
-      const fileName = `img_${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
-
-      const { error: uploadErr } = await supabase.storage
-        .from('media')
-        .upload(fileName, req.file.buffer, {
-          contentType: req.file.mimetype,
-          upsert: true
-        });
-
-      if (uploadErr) {
-        console.error("Supabase storage upload error:", uploadErr);
-        return res.status(500).json({ error: "Cloud storage upload failed: " + uploadErr.message });
-      }
-
-      const { data: publicUrlData } = supabase.storage.from('media').getPublicUrl(fileName);
-      const url = publicUrlData.publicUrl;
-
+      const url = `/uploads/${req.file.filename}`;
       res.json({
         ok: true,
         url,
-        filename: fileName,
+        filename: req.file.filename,
         originalName: req.file.originalname,
         size: req.file.size,
       });
@@ -371,39 +311,20 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
     }
   });
 
-  // ── Multi-file upload (Supabase Cloud Storage) ──
+  // ── Multi-file upload (Local Filesystem Storage) ──
   app.post("/api/upload/multiple", upload.array('files', 20), async (req: any, res) => {
     const files = req.files as any[];
     if (!files || files.length === 0) return res.status(400).json({ error: "No files uploaded" });
     try {
-      const results = [];
-      for (const f of files) {
-        const ext = path.extname(f.originalname) || '.jpg';
-        const fileName = `img_${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
-
-        const { error: uploadErr } = await supabase.storage
-          .from('media')
-          .upload(fileName, f.buffer, {
-            contentType: f.mimetype,
-            upsert: true
-          });
-
-        let url = "";
-        if (!uploadErr) {
-          const { data: publicUrlData } = supabase.storage.from('media').getPublicUrl(fileName);
-          url = publicUrlData.publicUrl;
-        }
-
-        results.push({
-          url: url || `/uploads/${fileName}`,
-          filename: fileName,
-          originalName: f.originalname,
-          size: f.size,
-        });
-      }
+      const results = files.map((f: any) => ({
+        url: `/uploads/${f.filename}`,
+        filename: f.filename,
+        originalName: f.originalname,
+        size: f.size,
+      }));
       res.json({ ok: true, files: results });
     } catch (err: any) {
-      res.status(500).json({ error: "Multi-upload cloud error" });
+      res.status(500).json({ error: "Multi-upload local error" });
     }
   });
 
@@ -650,7 +571,7 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
   });
 
   // ── Vite middleware for development ──
-  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL && !process.env.NETLIFY && !process.env.AWS_LAMBDA_FUNCTION_NAME && !process.env.SERVERLESS) {
+  if (process.env.NODE_ENV !== "production") {
     import("vite").then(({ createServer: createViteServer }) => {
       createViteServer({
         server: { middlewareMode: true },
@@ -659,7 +580,7 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
         app.use(vite.middlewares);
       });
     }).catch(err => console.error("Vite init error:", err));
-  } else if (!process.env.VERCEL && !process.env.NETLIFY && !process.env.AWS_LAMBDA_FUNCTION_NAME && !process.env.SERVERLESS) {
+  } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath, { maxAge: '1y', setHeaders: (res, filePath) => { if (filePath.includes('/assets/')) { res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); } } }));
     app.get('*', (req, res) => {
@@ -667,10 +588,8 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
     });
   }
 
-  if (!process.env.VERCEL && !process.env.NETLIFY && !process.env.AWS_LAMBDA_FUNCTION_NAME && !process.env.SERVERLESS) {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  }
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Adan Decor Platform server running locally on port ${PORT}`);
+  });
 
 export default app;
