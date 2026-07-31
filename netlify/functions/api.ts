@@ -1,12 +1,19 @@
 import serverless from "serverless-http";
 import app from "../../server";
 
-export const handler = serverless(app, {
-  request(req: any) {
-    if (req.url && req.url.startsWith('/.netlify/functions/api')) {
-      req.url = req.url.replace('/.netlify/functions/api', '/api');
-    } else if (req.url && !req.url.startsWith('/api')) {
-      req.url = '/api' + req.url;
+const serverlessApp = serverless(app);
+
+export const handler = async (event: any, context: any) => {
+  // Directly normalize event path before serverless-http processing
+  if (event && event.path) {
+    if (event.path.startsWith('/.netlify/functions/api')) {
+      event.path = event.path.replace('/.netlify/functions/api', '/api');
+    } else if (!event.path.startsWith('/api')) {
+      event.path = '/api' + event.path;
     }
   }
-});
+  if (event && typeof event.rawUrl === 'string') {
+    event.rawUrl = event.rawUrl.replace('/.netlify/functions/api', '/api');
+  }
+  return await serverlessApp(event, context);
+};

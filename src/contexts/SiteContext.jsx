@@ -149,21 +149,38 @@ function buildDefaults() {
 // Helper: merge server data with defaults (server data wins)
 function mergeWithDefaults(serverData) {
   const defaults = buildDefaults();
+  if (!serverData || typeof serverData !== "object") return defaults;
+  const safePageConfig = serverData.pageConfig || {};
   return {
-    services: serverData.services?.length ? serverData.services : defaults.services,
-    projects: serverData.projects?.length ? serverData.projects : defaults.projects,
-    testimonials: serverData.testimonials?.length ? serverData.testimonials : defaults.testimonials,
-    media: serverData.media?.length ? serverData.media : defaults.media,
-    users: serverData.users?.length ? serverData.users : defaults.users,
+    services: Array.isArray(serverData.services) && serverData.services.length > 0 ? serverData.services : defaults.services,
+    projects: Array.isArray(serverData.projects) && serverData.projects.length > 0 ? serverData.projects : defaults.projects,
+    testimonials: Array.isArray(serverData.testimonials) && serverData.testimonials.length > 0 ? serverData.testimonials : defaults.testimonials,
+    media: Array.isArray(serverData.media) && serverData.media.length > 0 ? serverData.media : defaults.media,
+    users: Array.isArray(serverData.users) && serverData.users.length > 0 ? serverData.users : defaults.users,
     brand: { ...defaults.brand, ...(serverData.brand || {}) },
     pageConfig: {
       ...defaults.pageConfig,
-      ...(serverData.pageConfig || {}),
-      homePage: { ...defaults.pageConfig.homePage, ...(serverData.pageConfig?.homePage || {}) },
-      aboutPage: { ...defaults.pageConfig.aboutPage, ...(serverData.pageConfig?.aboutPage || {}) },
-      servicesPage: { ...defaults.pageConfig.servicesPage, ...(serverData.pageConfig?.servicesPage || {}) },
-      portfolioPage: { ...defaults.pageConfig.portfolioPage, ...(serverData.pageConfig?.portfolioPage || {}) },
-      footer: { ...defaults.pageConfig.footer, ...(serverData.pageConfig?.footer || {}) },
+      ...safePageConfig,
+      homePage: {
+        ...defaults.pageConfig.homePage,
+        ...(safePageConfig.homePage || {}),
+        hero: {
+          ...defaults.pageConfig.homePage.hero,
+          ...(safePageConfig.homePage?.hero || {}),
+        },
+        trust: {
+          ...defaults.pageConfig.homePage.trust,
+          ...(safePageConfig.homePage?.trust || {}),
+        }
+      },
+      aboutPage: { ...defaults.pageConfig.aboutPage, ...(safePageConfig.aboutPage || {}) },
+      servicesPage: { 
+        ...defaults.pageConfig.servicesPage, 
+        ...(safePageConfig.servicesPage || {}),
+        sectors: Array.isArray(safePageConfig.servicesPage?.sectors) && safePageConfig.servicesPage.sectors.length > 0 ? safePageConfig.servicesPage.sectors : defaults.pageConfig.servicesPage.sectors
+      },
+      portfolioPage: { ...defaults.pageConfig.portfolioPage, ...(safePageConfig.portfolioPage || {}) },
+      footer: { ...defaults.pageConfig.footer, ...(safePageConfig.footer || {}) },
     },
   };
 }

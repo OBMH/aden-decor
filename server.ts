@@ -93,9 +93,17 @@ async function loadServerSiteData() {
       rows.forEach(row => {
         serverSiteData[row.key] = row.value;
       });
+      if (serverSiteData.admins && Array.isArray(serverSiteData.admins) && serverSiteData.admins.length > 0) {
+        db.admins = serverSiteData.admins;
+      } else {
+        await supabase.from('app_data').upsert({ key: 'admins', value: db.admins, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+        serverSiteData.admins = db.admins;
+      }
       console.log("☁️ [Supabase Sync] Site data successfully loaded from Supabase Cloud Database!");
       try { fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(serverSiteData, null, 2), 'utf-8'); } catch(e){}
       return;
+    } else if (!error && (!rows || rows.length === 0)) {
+      await supabase.from('app_data').upsert({ key: 'admins', value: db.admins, updated_at: new Date().toISOString() }, { onConflict: 'key' });
     }
   } catch (err) {
     console.warn("⚠️ [Supabase Warn] Could not connect to Supabase on boot, trying local backup...", err);
@@ -389,7 +397,22 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
   // ──  AUTH ROUTES  ──
   // ═══════════════════════════════════════
 
-  app.post("/api/admin/login", (req, res) => {
+  app.post("/api/admin/login", async (req, res) => {
+    await loadServerSiteData();
+    const email = req.body.email?.toLowerCase().trim();
+    const admin = db.admins.find(a => a.email === email);
+    if (!admin || !bcrypt.compareSync(req.body.password, admin.password_hash)) {
+      return res.status(401).json({ detail: "بيانات الدخول غير صحيحة" });
+    }
+    const token = jwt.sign({ sub: admin.id, email: admin.email }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({
+      access_token: token, token_type: "bearer",
+      admin: { id: admin.id, email: admin.email, name: admin.name, role: admin.role }
+    });
+  });
+
+  app.post("/api/login", async (req, res) => {
+    await loadServerSiteData();
     const email = req.body.email?.toLowerCase().trim();
     const admin = db.admins.find(a => a.email === email);
     if (!admin || !bcrypt.compareSync(req.body.password, admin.password_hash)) {
@@ -505,6 +528,7 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
       password_hash: bcrypt.hashSync(req.body.password, 10), created_at: new Date().toISOString()
     };
     db.admins.push(u);
+    updateSiteSection('admins', db.admins);
     res.json({ id: u.id, email: u.email, name: u.name, role: u.role });
   });
   app.put("/api/admin/users/:uid", requireRole('admin'), (req, res) => {
@@ -513,11 +537,13 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
     if (req.body.name) db.admins[i].name = req.body.name;
     if (req.body.role) db.admins[i].role = req.body.role;
     if (req.body.password && req.body.password.length >= 6) db.admins[i].password_hash = bcrypt.hashSync(req.body.password, 10);
+    updateSiteSection('admins', db.admins);
     res.json({ ok: true });
   });
   app.delete("/api/admin/users/:uid", requireRole('admin'), (req, res) => {
     if ((req as any).admin.id === req.params.uid) return res.status(400).json({ detail: "لا يمكنك حذف حسابك" });
     db.admins = db.admins.filter(a => a.id !== req.params.uid);
+    updateSiteSection('admins', db.admins);
     res.json({ ok: true });
   });
 
