@@ -93,17 +93,30 @@ async function loadServerSiteData() {
       rows.forEach(row => {
         serverSiteData[row.key] = row.value;
       });
-      if (serverSiteData.admins && Array.isArray(serverSiteData.admins) && serverSiteData.admins.length > 0) {
+      if (serverSiteData.users && Array.isArray(serverSiteData.users) && serverSiteData.users.length > 0) {
+        db.admins = serverSiteData.users;
+        serverSiteData.admins = serverSiteData.users;
+      } else if (serverSiteData.admins && Array.isArray(serverSiteData.admins) && serverSiteData.admins.length > 0) {
         db.admins = serverSiteData.admins;
+        serverSiteData.users = serverSiteData.admins;
       } else {
         await supabase.from('app_data').upsert({ key: 'admins', value: db.admins, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+        await supabase.from('app_data').upsert({ key: 'users', value: db.admins, updated_at: new Date().toISOString() }, { onConflict: 'key' });
         serverSiteData.admins = db.admins;
+        serverSiteData.users = db.admins;
       }
+      if (serverSiteData.projects && Array.isArray(serverSiteData.projects)) db.projects = serverSiteData.projects;
+      if (serverSiteData.services && Array.isArray(serverSiteData.services)) db.services = serverSiteData.services;
+      if (serverSiteData.testimonials && Array.isArray(serverSiteData.testimonials)) db.testimonials = serverSiteData.testimonials;
+      if (serverSiteData.media && Array.isArray(serverSiteData.media)) db.media = serverSiteData.media;
+      if (serverSiteData.contacts && Array.isArray(serverSiteData.contacts)) db.contacts = serverSiteData.contacts;
+      if (serverSiteData.notifications && Array.isArray(serverSiteData.notifications)) db.notifications = serverSiteData.notifications;
       console.log("☁️ [Supabase Sync] Site data successfully loaded from Supabase Cloud Database!");
       try { fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(serverSiteData, null, 2), 'utf-8'); } catch(e){}
       return;
     } else if (!error && (!rows || rows.length === 0)) {
       await supabase.from('app_data').upsert({ key: 'admins', value: db.admins, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      await supabase.from('app_data').upsert({ key: 'users', value: db.admins, updated_at: new Date().toISOString() }, { onConflict: 'key' });
     }
   } catch (err) {
     console.warn("⚠️ [Supabase Warn] Could not connect to Supabase on boot, trying local backup...", err);
@@ -152,6 +165,22 @@ async function updateSiteSection(section: string, value: any) {
   serverSiteData[section] = value;
   serverSiteData['last_updated'] = new Date().toISOString();
 
+  if (section === 'projects' && Array.isArray(value)) db.projects = value;
+  if (section === 'services' && Array.isArray(value)) db.services = value;
+  if (section === 'testimonials' && Array.isArray(value)) db.testimonials = value;
+  if (section === 'media' && Array.isArray(value)) db.media = value;
+  if (section === 'contacts' && Array.isArray(value)) db.contacts = value;
+  if (section === 'notifications' && Array.isArray(value)) db.notifications = value;
+  if ((section === 'users' || section === 'admins') && Array.isArray(value)) {
+    db.admins = value;
+    serverSiteData['admins'] = value;
+    serverSiteData['users'] = value;
+    try {
+      await supabase.from('app_data').upsert({ key: 'admins', value: value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      await supabase.from('app_data').upsert({ key: 'users', value: value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    } catch(e) {}
+  }
+
   try {
     fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(serverSiteData, null, 2), 'utf-8');
   } catch (e) {}
@@ -185,13 +214,14 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
   }));
 
   // ── Auth middleware ──
-  const getAdmin = (req, res, next) => {
+  const getAdmin = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ detail: "غير مصرح" });
     try {
+      await loadServerSiteData();
       const token = authHeader.substring(7);
-      const decoded = jwt.verify(token, JWT_SECRET);
-      const admin = db.admins.find(a => a.id === decoded.sub);
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      const admin = db.admins.find(a => a.id === decoded.sub || a.email === decoded.email);
       if (!admin) return res.status(401).json({ detail: "المسؤول غير موجود" });
       (req as any).admin = admin;
       next();
@@ -439,10 +469,12 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
     const msg = db.contacts.find(c => c.id === req.params.id);
     if (!msg) return res.status(404).json({ detail: "Not found" });
     msg.is_read = true;
+    updateSiteSection('contacts', db.contacts);
     res.json({ ok: true });
   });
   app.delete("/api/admin/messages/:id", getAdmin, (req, res) => {
     db.contacts = db.contacts.filter(c => c.id !== req.params.id);
+    updateSiteSection('contacts', db.contacts);
     res.json({ ok: true });
   });
 
@@ -450,16 +482,19 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
   app.post("/api/admin/projects", getAdmin, (req, res) => {
     const p = { ...req.body, id: uuidv4(), created_at: new Date().toISOString() };
     db.projects.push(p);
+    updateSiteSection('projects', db.projects);
     res.json(p);
   });
   app.put("/api/admin/projects/:id", getAdmin, (req, res) => {
     const i = db.projects.findIndex(p => p.id === req.params.id);
     if (i < 0) return res.status(404).json({ detail: "Not found" });
     db.projects[i] = { ...db.projects[i], ...req.body };
+    updateSiteSection('projects', db.projects);
     res.json(db.projects[i]);
   });
   app.delete("/api/admin/projects/:id", getAdmin, (req, res) => {
     db.projects = db.projects.filter(p => p.id !== req.params.id);
+    updateSiteSection('projects', db.projects);
     res.json({ ok: true });
   });
 
@@ -467,16 +502,19 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
   app.post("/api/admin/services", requireRole('admin', 'editor'), (req, res) => {
     const s = { ...req.body, id: uuidv4() };
     db.services.push(s);
+    updateSiteSection('services', db.services);
     res.json(s);
   });
   app.put("/api/admin/services/:id", requireRole('admin', 'editor'), (req, res) => {
     const i = db.services.findIndex(s => s.id === req.params.id);
     if (i < 0) return res.status(404).json({ detail: "Not found" });
     db.services[i] = { ...db.services[i], ...req.body };
+    updateSiteSection('services', db.services);
     res.json(db.services[i]);
   });
   app.delete("/api/admin/services/:id", requireRole('admin', 'editor'), (req, res) => {
     db.services = db.services.filter(s => s.id !== req.params.id);
+    updateSiteSection('services', db.services);
     res.json({ ok: true });
   });
 
@@ -484,16 +522,19 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
   app.post("/api/admin/testimonials", requireRole('admin', 'editor'), (req, res) => {
     const t = { ...req.body, id: uuidv4() };
     db.testimonials.push(t);
+    updateSiteSection('testimonials', db.testimonials);
     res.json(t);
   });
   app.put("/api/admin/testimonials/:id", requireRole('admin', 'editor'), (req, res) => {
     const i = db.testimonials.findIndex(t => t.id === req.params.id);
     if (i < 0) return res.status(404).json({ detail: "Not found" });
     db.testimonials[i] = { ...db.testimonials[i], ...req.body };
+    updateSiteSection('testimonials', db.testimonials);
     res.json(db.testimonials[i]);
   });
   app.delete("/api/admin/testimonials/:id", requireRole('admin', 'editor'), (req, res) => {
     db.testimonials = db.testimonials.filter(t => t.id !== req.params.id);
+    updateSiteSection('testimonials', db.testimonials);
     res.json({ ok: true });
   });
 
@@ -508,12 +549,14 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
       if (i >= 0) db.settings[i] = { key, value: String(value), updated_at: new Date().toISOString() };
       else db.settings.push({ key, value: String(value), updated_at: new Date().toISOString() });
     });
+    updateSiteSection('settings', db.settings);
     res.json({ ok: true, count: Object.keys(req.body).length });
   });
 
   app.get("/api/admin/media", getAdmin, (req, res) => res.json([...db.media].sort((a,b) => b.uploaded_at.localeCompare(a.uploaded_at))));
   app.delete("/api/admin/media/:id", requireRole('admin', 'editor'), (req, res) => {
     db.media = db.media.filter(m => m.id !== req.params.id);
+    updateSiteSection('media', db.media);
     res.json({ ok: true });
   });
 
@@ -562,14 +605,17 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
     const n = db.notifications.find(x => x.id === req.params.id);
     if (!n) return res.status(404).json({ detail: "Not found" });
     n.is_read = true;
+    updateSiteSection('notifications', db.notifications);
     res.json({ ok: true });
   });
   app.post("/api/admin/notifications/read-all", getAdmin, (req, res) => {
     db.notifications.forEach(n => n.is_read = true);
+    updateSiteSection('notifications', db.notifications);
     res.json({ ok: true });
   });
   app.delete("/api/admin/notifications/:id", requireRole('admin', 'editor'), (req, res) => {
     db.notifications = db.notifications.filter(x => x.id !== req.params.id);
+    updateSiteSection('notifications', db.notifications);
     res.json({ ok: true });
   });
 
