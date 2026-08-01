@@ -302,12 +302,19 @@ app.get("/api/", (req, res) => res.json({ message: "Adan Decor API", status: "ru
 app.get("/api/site-data", async (req, res) => {
   await loadServerSiteData();
   if (!serverSiteData) serverSiteData = {};
+  const rawMedia = serverSiteData.media || db.media || [];
+  const cleanMedia = Array.isArray(rawMedia) ? rawMedia.map((m) => {
+    if (m.data_url && typeof m.data_url === "string" && m.data_url.length > 500) {
+      return { ...m, data_url: m.url || m.filename || "" };
+    }
+    return m;
+  }) : [];
   const safeResponse = {
     ...serverSiteData,
     projects: serverSiteData.projects || db.projects || [],
     services: serverSiteData.services || db.services || [],
     testimonials: serverSiteData.testimonials || db.testimonials || [],
-    media: serverSiteData.media || db.media || [],
+    media: cleanMedia,
     settings: serverSiteData.settings || db.settings || [],
     contacts: serverSiteData.contacts || db.contacts || [],
     notifications: serverSiteData.notifications || db.notifications || [],
