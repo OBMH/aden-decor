@@ -126,11 +126,6 @@ const SafeImage = forwardRef(({ src, alt, className, fallbackType = "general", l
     currentSrc = FALLBACKS[fallbackType] || FALLBACKS.general;
   }
 
-  // If this is a logo and we've hit an error or have no source, render the vector logo
-  if (fallbackType === "logo" && (!src || errorCount >= 1)) {
-    return <LuxuryLogoSvg className={className} />;
-  }
-
   // Add auto-formatting for WebP/AVIF if not already present on unsplash URLs
   if (currentSrc && currentSrc.includes('images.unsplash.com') && !currentSrc.includes('auto=format')) {
       if (currentSrc.includes('?')) {
@@ -140,19 +135,23 @@ const SafeImage = forwardRef(({ src, alt, className, fallbackType = "general", l
       }
   }
 
+  // ALL HOOKS MUST EXECUTE BEFORE ANY EARLY RETURN (Rules of Hooks)
   useEffect(() => {
-    if (priority && currentSrc && typeof document !== "undefined") {
+    if (priority && currentSrc && typeof document !== "undefined" && !(fallbackType === "logo" && (!src || errorCount >= 1))) {
       const link = document.createElement("link");
       link.rel = "preload";
       link.as = "image";
       link.href = currentSrc;
       document.head.appendChild(link);
-      return () => {
-        // Optional: remove link on unmount, but usually preloads are kept.
-        // document.head.removeChild(link);
-      };
+      return () => {};
     }
-  }, [priority, currentSrc]);
+  }, [priority, currentSrc, fallbackType, src, errorCount]);
+
+  // If this is a logo and we've hit an error or have no source, render the vector logo
+  // THIS MUST COME AFTER useEffect TO PREVENT REACT ERROR #300!
+  if (fallbackType === "logo" && (!src || errorCount >= 1)) {
+    return <LuxuryLogoSvg className={className} />;
+  }
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-transparent flex items-center justify-center">

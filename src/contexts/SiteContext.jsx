@@ -151,23 +151,36 @@ function mergeWithDefaults(serverData) {
   const defaults = buildDefaults();
   if (!serverData || typeof serverData !== "object") return defaults;
   const safePageConfig = serverData.pageConfig || {};
+  
+  // Sanitize development paths (/src/assets/...) stored in cloud database
+  // to prevent 404 failures in production build on Vercel
+  const mergedBrand = { ...defaults.brand, ...(serverData.brand || {}) };
+  if (mergedBrand.logo && typeof mergedBrand.logo === "string" && mergedBrand.logo.startsWith("/src/")) {
+    mergedBrand.logo = defaults.brand.logo;
+  }
+
+  const mergedHero = {
+    ...defaults.pageConfig.homePage.hero,
+    ...(safePageConfig.homePage?.hero || {}),
+  };
+  if (mergedHero.bgImage && typeof mergedHero.bgImage === "string" && mergedHero.bgImage.startsWith("/src/")) {
+    mergedHero.bgImage = defaults.pageConfig.homePage.hero.bgImage || "";
+  }
+
   return {
     services: Array.isArray(serverData.services) && serverData.services.length > 0 ? serverData.services : defaults.services,
     projects: Array.isArray(serverData.projects) && serverData.projects.length > 0 ? serverData.projects : defaults.projects,
     testimonials: Array.isArray(serverData.testimonials) && serverData.testimonials.length > 0 ? serverData.testimonials : defaults.testimonials,
     media: Array.isArray(serverData.media) && serverData.media.length > 0 ? serverData.media : defaults.media,
     users: Array.isArray(serverData.users) && serverData.users.length > 0 ? serverData.users : defaults.users,
-    brand: { ...defaults.brand, ...(serverData.brand || {}) },
+    brand: mergedBrand,
     pageConfig: {
       ...defaults.pageConfig,
       ...safePageConfig,
       homePage: {
         ...defaults.pageConfig.homePage,
         ...(safePageConfig.homePage || {}),
-        hero: {
-          ...defaults.pageConfig.homePage.hero,
-          ...(safePageConfig.homePage?.hero || {}),
-        },
+        hero: mergedHero,
         trust: {
           ...defaults.pageConfig.homePage.trust,
           ...(safePageConfig.homePage?.trust || {}),
