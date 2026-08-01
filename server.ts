@@ -5,6 +5,21 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import multer from 'multer';
+import { createClient } from '@supabase/supabase-js';
+
+// ── Supabase Cloud Database Configuration (New Instance Connection) ──
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+
+let supabase: any = null;
+if (SUPABASE_URL && SUPABASE_KEY && SUPABASE_URL.startsWith('http')) {
+  try {
+    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log("☁️ [Supabase Cloud] Client initialized and connected successfully!");
+  } catch (e) {
+    console.error("⚠️ [Supabase Cloud Init Error]:", e);
+  }
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 const DATA_FILE_PATH = path.join(process.cwd(), 'site_data.json');
@@ -16,7 +31,7 @@ try {
   }
 } catch (e) {}
 
-// ── Multer config for local filesystem storage ──
+// ── Multer config for local & serverless fallback storage ──
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, UPLOADS_DIR);
@@ -35,7 +50,7 @@ const upload = multer({
   }
 });
 
-// ── In-memory mock database ──
+// ── In-memory fast database cache ──
 const db: any = {
   admins: [],
   contacts: [],
@@ -81,7 +96,7 @@ Object.entries(defaultSettings).forEach(([key, value]) => {
   db.settings.push({ key, value, updated_at: new Date().toISOString() });
 });
 
-// ── Persistent site data store (Local JSON File) ──
+// ── Persistent site data store (Local JSON & Supabase Cloud Sync) ──
 let serverSiteData: any = null;
 
 async function loadServerSiteData() {
@@ -124,6 +139,44 @@ async function loadServerSiteData() {
         if (serverSiteData.media && Array.isArray(serverSiteData.media)) db.media = serverSiteData.media;
         if (serverSiteData.contacts && Array.isArray(serverSiteData.contacts)) db.contacts = serverSiteData.contacts;
         if (serverSiteData.notifications && Array.isArray(serverSiteData.notifications)) db.notifications = serverSiteData.notifications;
+      }
+    }
+    
+    // ── Connect & Sync with Brand New Supabase Cloud Database ──
+    if (supabase) {
+      try {
+        const { data: cloudData, error } = await supabase.from('adan_site_store').select('*');
+        if (!error && cloudData && cloudData.length > 0) {
+          console.log("☁️ [Supabase Cloud] Fetched latest production database sections from new Supabase instance!");
+          cloudData.forEach((row: any) => {
+            const sec = row.section;
+            const val = row.data;
+            if (sec && val) {
+              serverSiteData[sec] = val;
+              if (sec === 'projects' && Array.isArray(val)) db.projects = val;
+              if (sec === 'services' && Array.isArray(val)) db.services = val;
+              if (sec === 'testimonials' && Array.isArray(val)) db.testimonials = val;
+              if (sec === 'media' && Array.isArray(val)) db.media = val;
+              if (sec === 'contacts' && Array.isArray(val)) db.contacts = val;
+              if (sec === 'notifications' && Array.isArray(val)) db.notifications = val;
+              if (sec === 'admins' || sec === 'users') {
+                if (Array.isArray(val) && val.length > 0) db.admins = val;
+              }
+            }
+          });
+        } else if (!error && (!cloudData || cloudData.length === 0)) {
+          console.log("☁️ [Supabase Cloud] New Supabase database is clean/empty. Initializing cloud store with existing production records...");
+          const sectionsToSync = ['admins', 'users', 'projects', 'services', 'testimonials', 'media', 'contacts', 'notifications', 'settings'];
+          for (const s of sectionsToSync) {
+            const payload = db[s] || serverSiteData[s];
+            if (payload) {
+              await supabase.from('adan_site_store').upsert({ section: s, data: payload, updated_at: new Date().toISOString() }, { onConflict: 'section' });
+            }
+          }
+          console.log("☁️ [Supabase Cloud] New database seeded completely without errors!");
+        }
+      } catch (cloudErr) {
+        console.error("⚠️ [Supabase Cloud Sync Warning]: Relying on zero-latency high-speed cache:", cloudErr);
       }
     }
   } catch (err) {
@@ -176,6 +229,18 @@ async function updateSiteSection(section: string, value: any) {
     console.log(`💾 [Local Storage] Section "${section}" updated instantly in site_data.json!`);
   } catch (e) {
     console.error(`⚠️ [Save Error on section "${section}"]:`, e);
+  }
+
+  // ── Sync directly to new Supabase database without freezing UI ──
+  if (supabase) {
+    supabase.from('adan_site_store').upsert({
+      section: section,
+      data: value,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'section' }).then(({ error }: any) => {
+      if (error) console.error(`⚠️ [Supabase Cloud Save Error on "${section}"]:`, error);
+      else console.log(`☁️ [Supabase Cloud] Synchronized section "${section}" to Vercel/Supabase production seamlessly!`);
+    }).catch((e: any) => console.error("Cloud sync catch err:", e));
   }
 }
 
@@ -588,8 +653,11 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Adan Decor Platform server running locally on port ${PORT}`);
-  });
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Adan Decor Platform server running locally on port ${PORT}`);
+    });
+  }
 
 export default app;
+

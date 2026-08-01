@@ -311,7 +311,7 @@
         "/assets/images/insulation_card_bg_1784517415029.jpg",
         "/assets/images/insulation_card_bg_1784517415029.jpg"
       ],
-      "category": "aluminum",
+      "category": "medical",
       "featured": false,
       "materials": [
         "أرضيات إيبوكسي",
@@ -319,8 +319,8 @@
         "عزل صوتي"
       ],
       "description": "تنفيذ وتجهيز عيادة أسنان وفق الاشتراطات الصحية مع التركيز على بيئة مريحة للمرضى.",
-      "categoryLabel": "مشاريع طبية",
-      "category_label": "أعمال الألمنيوم والواجهات",
+      "categoryLabel": "المشاريع الطبية",
+      "category_label": "المشاريع الطبية",
       "location": "عدن — اليمن",
       "execution_time": "شهرين",
       "year": "2026",
@@ -542,7 +542,7 @@
       "subtitle": "استعرض أبرز المشاريع والتحف الفنية التي نفذناها للفلل والمجالس والمشاريع التجارية."
     }
   },
-  "last_updated": "2026-07-31T23:22:17.177Z",
+  "last_updated": "2026-07-31T23:52:29.803Z",
   "cloud_sync_info": {
     "status": "Active",
     "provider": "Supabase PostgreSQL",

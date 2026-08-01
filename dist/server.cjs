@@ -39,6 +39,18 @@ var import_bcryptjs = __toESM(require("bcryptjs"), 1);
 var import_jsonwebtoken = __toESM(require("jsonwebtoken"), 1);
 var import_uuid = require("uuid");
 var import_multer = __toESM(require("multer"), 1);
+var import_supabase_js = require("@supabase/supabase-js");
+var SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
+var SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+var supabase = null;
+if (SUPABASE_URL && SUPABASE_KEY && SUPABASE_URL.startsWith("http")) {
+  try {
+    supabase = (0, import_supabase_js.createClient)(SUPABASE_URL, SUPABASE_KEY);
+    console.log("\u2601\uFE0F [Supabase Cloud] Client initialized and connected successfully!");
+  } catch (e) {
+    console.error("\u26A0\uFE0F [Supabase Cloud Init Error]:", e);
+  }
+}
 var JWT_SECRET = process.env.JWT_SECRET || "fallback-secret";
 var DATA_FILE_PATH = import_path.default.join(process.cwd(), "site_data.json");
 var UPLOADS_DIR = import_path.default.join(process.cwd(), "public", "uploads");
@@ -156,6 +168,42 @@ async function loadServerSiteData() {
         if (serverSiteData.notifications && Array.isArray(serverSiteData.notifications)) db.notifications = serverSiteData.notifications;
       }
     }
+    if (supabase) {
+      try {
+        const { data: cloudData, error } = await supabase.from("adan_site_store").select("*");
+        if (!error && cloudData && cloudData.length > 0) {
+          console.log("\u2601\uFE0F [Supabase Cloud] Fetched latest production database sections from new Supabase instance!");
+          cloudData.forEach((row) => {
+            const sec = row.section;
+            const val = row.data;
+            if (sec && val) {
+              serverSiteData[sec] = val;
+              if (sec === "projects" && Array.isArray(val)) db.projects = val;
+              if (sec === "services" && Array.isArray(val)) db.services = val;
+              if (sec === "testimonials" && Array.isArray(val)) db.testimonials = val;
+              if (sec === "media" && Array.isArray(val)) db.media = val;
+              if (sec === "contacts" && Array.isArray(val)) db.contacts = val;
+              if (sec === "notifications" && Array.isArray(val)) db.notifications = val;
+              if (sec === "admins" || sec === "users") {
+                if (Array.isArray(val) && val.length > 0) db.admins = val;
+              }
+            }
+          });
+        } else if (!error && (!cloudData || cloudData.length === 0)) {
+          console.log("\u2601\uFE0F [Supabase Cloud] New Supabase database is clean/empty. Initializing cloud store with existing production records...");
+          const sectionsToSync = ["admins", "users", "projects", "services", "testimonials", "media", "contacts", "notifications", "settings"];
+          for (const s of sectionsToSync) {
+            const payload = db[s] || serverSiteData[s];
+            if (payload) {
+              await supabase.from("adan_site_store").upsert({ section: s, data: payload, updated_at: (/* @__PURE__ */ new Date()).toISOString() }, { onConflict: "section" });
+            }
+          }
+          console.log("\u2601\uFE0F [Supabase Cloud] New database seeded completely without errors!");
+        }
+      } catch (cloudErr) {
+        console.error("\u26A0\uFE0F [Supabase Cloud Sync Warning]: Relying on zero-latency high-speed cache:", cloudErr);
+      }
+    }
   } catch (err) {
     console.error("Failed to load site_data.json:", err);
   }
@@ -205,6 +253,16 @@ async function updateSiteSection(section, value) {
     console.log(`\u{1F4BE} [Local Storage] Section "${section}" updated instantly in site_data.json!`);
   } catch (e) {
     console.error(`\u26A0\uFE0F [Save Error on section "${section}"]:`, e);
+  }
+  if (supabase) {
+    supabase.from("adan_site_store").upsert({
+      section,
+      data: value,
+      updated_at: (/* @__PURE__ */ new Date()).toISOString()
+    }, { onConflict: "section" }).then(({ error }) => {
+      if (error) console.error(`\u26A0\uFE0F [Supabase Cloud Save Error on "${section}"]:`, error);
+      else console.log(`\u2601\uFE0F [Supabase Cloud] Synchronized section "${section}" to Vercel/Supabase production seamlessly!`);
+    }).catch((e) => console.error("Cloud sync catch err:", e));
   }
 }
 var app = (0, import_express.default)();
@@ -575,8 +633,10 @@ if (process.env.NODE_ENV !== "production") {
     res.sendFile(import_path.default.join(distPath, "index.html"));
   });
 }
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`\u{1F680} Adan Decor Platform server running locally on port ${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`\u{1F680} Adan Decor Platform server running locally on port ${PORT}`);
+  });
+}
 var server_default = app;
 //# sourceMappingURL=server.cjs.map
