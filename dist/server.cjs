@@ -119,8 +119,9 @@ var defaultSettings = {
 Object.entries(defaultSettings).forEach(([key, value]) => {
   db.settings.push({ key, value, updated_at: (/* @__PURE__ */ new Date()).toISOString() });
 });
-var serverSiteData = null;
+var serverSiteData = {};
 async function loadServerSiteData() {
+  if (!serverSiteData) serverSiteData = {};
   try {
     if (import_fs.default.existsSync(DATA_FILE_PATH)) {
       const raw = import_fs.default.readFileSync(DATA_FILE_PATH, "utf-8");
@@ -300,10 +301,20 @@ var requireRole = (...roles) => (req, res, next) => {
 app.get("/api/", (req, res) => res.json({ message: "Adan Decor API", status: "running" }));
 app.get("/api/site-data", async (req, res) => {
   await loadServerSiteData();
-  if (serverSiteData && Object.keys(serverSiteData).length > 0) {
-    return res.json(serverSiteData);
-  }
-  return res.json({ status: "empty" });
+  if (!serverSiteData) serverSiteData = {};
+  const safeResponse = {
+    ...serverSiteData,
+    projects: serverSiteData.projects || db.projects || [],
+    services: serverSiteData.services || db.services || [],
+    testimonials: serverSiteData.testimonials || db.testimonials || [],
+    media: serverSiteData.media || db.media || [],
+    settings: serverSiteData.settings || db.settings || [],
+    contacts: serverSiteData.contacts || db.contacts || [],
+    notifications: serverSiteData.notifications || db.notifications || [],
+    admins: serverSiteData.admins || db.admins || [],
+    users: serverSiteData.users || db.admins || []
+  };
+  return res.json(safeResponse);
 });
 app.post("/api/site-data", (req, res) => {
   if (!req.body || typeof req.body !== "object") {

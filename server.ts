@@ -98,9 +98,10 @@ Object.entries(defaultSettings).forEach(([key, value]) => {
 });
 
 // ── Persistent site data store (Local JSON & Supabase Cloud Sync) ──
-let serverSiteData: any = null;
+let serverSiteData: any = {};
 
 async function loadServerSiteData() {
+  if (!serverSiteData) serverSiteData = {};
   try {
     if (fs.existsSync(DATA_FILE_PATH)) {
       const raw = fs.readFileSync(DATA_FILE_PATH, 'utf-8');
@@ -294,10 +295,20 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
   // ── Site Data (full read/write) ──
   app.get("/api/site-data", async (req, res) => {
     await loadServerSiteData();
-    if (serverSiteData && Object.keys(serverSiteData).length > 0) {
-      return res.json(serverSiteData);
-    }
-    return res.json({ status: "empty" });
+    if (!serverSiteData) serverSiteData = {};
+    const safeResponse = {
+      ...serverSiteData,
+      projects: serverSiteData.projects || db.projects || [],
+      services: serverSiteData.services || db.services || [],
+      testimonials: serverSiteData.testimonials || db.testimonials || [],
+      media: serverSiteData.media || db.media || [],
+      settings: serverSiteData.settings || db.settings || [],
+      contacts: serverSiteData.contacts || db.contacts || [],
+      notifications: serverSiteData.notifications || db.notifications || [],
+      admins: serverSiteData.admins || db.admins || [],
+      users: serverSiteData.users || db.admins || []
+    };
+    return res.json(safeResponse);
   });
 
   app.post("/api/site-data", (req, res) => {
