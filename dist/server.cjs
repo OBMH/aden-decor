@@ -48,6 +48,17 @@ if (SUPABASE_URL && SUPABASE_KEY && SUPABASE_URL.startsWith("http")) {
   try {
     supabase = (0, import_supabase_js.createClient)(SUPABASE_URL, SUPABASE_KEY);
     console.log("\u2601\uFE0F [Supabase Cloud] Client initialized and connected successfully!");
+    supabase.storage.listBuckets().then(({ data: buckets }) => {
+      if (buckets && !buckets.some((b) => b.name === "site-media")) {
+        supabase.storage.createBucket("site-media", {
+          public: true,
+          fileSizeLimit: 20971520,
+          // 20MB
+          allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif", "image/svg+xml"]
+        }).then(() => console.log("\u2601\uFE0F [Supabase Cloud] Created public 'site-media' storage bucket."));
+      }
+    }).catch(() => {
+    });
   } catch (e) {
     console.error("\u26A0\uFE0F [Supabase Cloud Init Error]:", e);
   }
@@ -61,15 +72,7 @@ try {
   }
 } catch (e) {
 }
-var storage = import_multer.default.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, UPLOADS_DIR);
-  },
-  filename: (req, file, cb) => {
-    const ext = import_path.default.extname(file.originalname) || ".jpg";
-    cb(null, `img_${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`);
-  }
-});
+var storage = import_multer.default.memoryStorage();
 var upload = (0, import_multer.default)({
   storage,
   limits: { fileSize: 15 * 1024 * 1024 },
@@ -79,6 +82,42 @@ var upload = (0, import_multer.default)({
     else cb(new Error("Only image files allowed"));
   }
 });
+async function uploadToCloudOrLocal(file) {
+  const ext = import_path.default.extname(file.originalname) || ".jpg";
+  const filename = `img_${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
+  const contentType = file.mimetype || "image/jpeg";
+  if (supabase) {
+    try {
+      const { data: uploadData, error: uploadError } = await supabase.storage.from("site-media").upload(filename, file.buffer, { contentType, upsert: true });
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from("site-media").getPublicUrl(filename);
+        console.log(`\u2601\uFE0F [Supabase Storage] Uploaded ${filename} successfully: ${urlData.publicUrl}`);
+        return {
+          url: urlData.publicUrl,
+          filename,
+          originalName: file.originalname,
+          size: file.size
+        };
+      } else {
+        console.error("\u26A0\uFE0F [Supabase Storage Error, falling back to local]:", uploadError.message);
+      }
+    } catch (err) {
+      console.error("\u26A0\uFE0F [Supabase Storage Exception]:", err.message);
+    }
+  }
+  const filePath = import_path.default.join(UPLOADS_DIR, filename);
+  try {
+    import_fs.default.writeFileSync(filePath, file.buffer);
+  } catch (e) {
+    console.error("\u26A0\uFE0F Failed writing to local uploads directory:", e.message);
+  }
+  return {
+    url: `/uploads/${filename}`,
+    filename,
+    originalName: file.originalname,
+    size: file.size
+  };
+}
 var db = {
   admins: [],
   contacts: [],
@@ -375,13 +414,13 @@ app.put("/api/site-data/users", (req, res) => {
 app.post("/api/upload", upload.single("file"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
   try {
-    const url = `/uploads/${req.file.filename}`;
+    const result = await uploadToCloudOrLocal(req.file);
     res.json({
       ok: true,
-      url,
-      filename: req.file.filename,
-      originalName: req.file.originalname,
-      size: req.file.size
+      url: result.url,
+      filename: result.filename,
+      originalName: result.originalName,
+      size: result.size
     });
   } catch (err) {
     console.error("Upload handler exception:", err);
@@ -392,15 +431,10 @@ app.post("/api/upload/multiple", upload.array("files", 20), async (req, res) => 
   const files = req.files;
   if (!files || files.length === 0) return res.status(400).json({ error: "No files uploaded" });
   try {
-    const results = files.map((f) => ({
-      url: `/uploads/${f.filename}`,
-      filename: f.filename,
-      originalName: f.originalname,
-      size: f.size
-    }));
+    const results = await Promise.all(files.map((f) => uploadToCloudOrLocal(f)));
     res.json({ ok: true, files: results });
   } catch (err) {
-    res.status(500).json({ error: "Multi-upload local error" });
+    res.status(500).json({ error: "Multi-upload cloud error" });
   }
 });
 app.post("/api/contact", (req, res) => {

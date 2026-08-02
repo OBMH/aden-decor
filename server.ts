@@ -17,6 +17,16 @@ if (SUPABASE_URL && SUPABASE_KEY && SUPABASE_URL.startsWith('http')) {
   try {
     supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
     console.log("☁️ [Supabase Cloud] Client initialized and connected successfully!");
+    // Ensure site-media public storage bucket exists for direct image uploads from user devices
+    supabase.storage.listBuckets().then(({ data: buckets }: any) => {
+      if (buckets && !buckets.some((b: any) => b.name === 'site-media')) {
+        supabase.storage.createBucket('site-media', {
+          public: true,
+          fileSizeLimit: 20971520, // 20MB
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/svg+xml']
+        }).then(() => console.log("☁️ [Supabase Cloud] Created public 'site-media' storage bucket."));
+      }
+    }).catch(() => {});
   } catch (e) {
     console.error("⚠️ [Supabase Cloud Init Error]:", e);
   }
@@ -32,16 +42,8 @@ try {
   }
 } catch (e) {}
 
-// ── Multer config for local & serverless fallback storage ──
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, UPLOADS_DIR);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `img_${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`);
-  }
-});
+// ── Multer config using memoryStorage to stream directly to Supabase Cloud Storage on Vercel ──
+const storage = multer.memoryStorage();
 const upload = multer({
   storage,
   limits: { fileSize: 15 * 1024 * 1024 }, // 15MB
@@ -50,6 +52,51 @@ const upload = multer({
     else cb(new Error('Only image files allowed'));
   }
 });
+
+// Helper to directly upload image buffer to Supabase Cloud Storage or fallback to local disk
+async function uploadToCloudOrLocal(file: any): Promise<{ url: string, filename: string, originalName: string, size: number }> {
+  const ext = path.extname(file.originalname) || '.jpg';
+  const filename = `img_${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
+  const contentType = file.mimetype || 'image/jpeg';
+
+  if (supabase) {
+    try {
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('site-media')
+        .upload(filename, file.buffer, { contentType, upsert: true });
+
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from('site-media').getPublicUrl(filename);
+        console.log(`☁️ [Supabase Storage] Uploaded ${filename} successfully: ${urlData.publicUrl}`);
+        return {
+          url: urlData.publicUrl,
+          filename,
+          originalName: file.originalname,
+          size: file.size,
+        };
+      } else {
+        console.error("⚠️ [Supabase Storage Error, falling back to local]:", uploadError.message);
+      }
+    } catch (err: any) {
+      console.error("⚠️ [Supabase Storage Exception]:", err.message);
+    }
+  }
+
+  // Fallback to local filesystem storage (offline / local dev mode)
+  const filePath = path.join(UPLOADS_DIR, filename);
+  try {
+    fs.writeFileSync(filePath, file.buffer);
+  } catch (e: any) {
+    console.error("⚠️ Failed writing to local uploads directory:", e.message);
+  }
+
+  return {
+    url: `/uploads/${filename}`,
+    filename,
+    originalName: file.originalname,
+    size: file.size,
+  };
+}
 
 // ── In-memory fast database cache ──
 const db: any = {
@@ -382,17 +429,17 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
     res.json({ ok: true, count: req.body.length });
   });
 
-  // ── File Upload endpoint (Local Filesystem Storage) ──
+  // ── File Upload endpoint (Direct Cloud Storage on Vercel / Local Fallback) ──
   app.post("/api/upload", upload.single('file'), async (req: any, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
     try {
-      const url = `/uploads/${req.file.filename}`;
+      const result = await uploadToCloudOrLocal(req.file);
       res.json({
         ok: true,
-        url,
-        filename: req.file.filename,
-        originalName: req.file.originalname,
-        size: req.file.size,
+        url: result.url,
+        filename: result.filename,
+        originalName: result.originalName,
+        size: result.size,
       });
     } catch (err: any) {
       console.error("Upload handler exception:", err);
@@ -400,20 +447,15 @@ loadServerSiteData().catch(e => console.error("Initial load err:", e));
     }
   });
 
-  // ── Multi-file upload (Local Filesystem Storage) ──
+  // ── Multi-file upload (Direct Cloud Storage on Vercel / Local Fallback) ──
   app.post("/api/upload/multiple", upload.array('files', 20), async (req: any, res) => {
     const files = req.files as any[];
     if (!files || files.length === 0) return res.status(400).json({ error: "No files uploaded" });
     try {
-      const results = files.map((f: any) => ({
-        url: `/uploads/${f.filename}`,
-        filename: f.filename,
-        originalName: f.originalname,
-        size: f.size,
-      }));
+      const results = await Promise.all(files.map((f: any) => uploadToCloudOrLocal(f)));
       res.json({ ok: true, files: results });
     } catch (err: any) {
-      res.status(500).json({ error: "Multi-upload local error" });
+      res.status(500).json({ error: "Multi-upload cloud error" });
     }
   });
 
