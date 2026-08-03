@@ -8,7 +8,6 @@ import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import { BRAND } from "@/data/content";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import SafeImage from "@/components/SafeImage";
-import { useSiteData } from "@/contexts/SiteContext";
 
 import interiorCardBg from "@/assets/images/interior_card_bg_1784515033104.jpg";
 import aluminumCardBg from "@/assets/images/aluminum_card_bg_1784516085266.jpg";
@@ -168,34 +167,13 @@ const serviceData = {
   }
 };
 
-export const DEFAULT_SERVICE_DETAILS = serviceData;
-
-const ICON_MAP = {
-  ShieldCheck,
-  PencilRuler,
-  Clock,
-  Sparkles,
-  CheckCircle2,
-};
-
 export default function ServiceTemplate() {
   const { serviceId } = useParams();
   const navigate = useNavigate();
-  const { pageConfig } = useSiteData();
 
-  const customData = pageConfig?.serviceDetails?.[serviceId] || {};
-  const defaultData = serviceData[serviceId] || {
+  const data = serviceData[serviceId] || {
     title: "عنوان الخدمة",
     subtitle: "Service Template",
-  };
-
-  const data = {
-    ...defaultData,
-    ...customData,
-    gallery: customData.gallery !== undefined ? customData.gallery : defaultData.gallery || [],
-    subServices: customData.subServices !== undefined ? customData.subServices : defaultData.subServices || [],
-    features: customData.features !== undefined ? customData.features : defaultData.features || [],
-    process: customData.process !== undefined ? customData.process : defaultData.process || [],
   };
 
   useEffect(() => {
@@ -371,7 +349,7 @@ export default function ServiceTemplate() {
               
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {data.features.map((feat, idx) => {
-                  const Icon = (typeof feat.icon === 'string' ? ICON_MAP[feat.icon] : feat.icon) || ShieldCheck;
+                  const Icon = feat.icon;
                   return (
                     <motion.div 
                       key={idx}
