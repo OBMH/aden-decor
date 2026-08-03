@@ -1,372 +1,954 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Layers,
   Plus,
   Edit2,
   Trash2,
-  Search,
   Check,
   X,
   Image as ImageIcon,
   Sparkles,
-  Sofa,
-  PaintBucket,
-  Hammer,
-  Building2,
+  Save,
+  FileText,
   Briefcase,
-  Construction,
+  Camera,
+  ListCheck,
+  Info,
+  Settings,
+  ArrowRight,
+  ArrowUp,
+  ArrowDown,
+  Building2,
+  Hammer,
   ShieldCheck,
-  Zap,
-  Star
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useSiteData } from "../contexts/SiteContext";
 import { MediaPickerModal } from "../components/MediaPickerModal";
 import SafeImage from "../components/SafeImage";
+import { DEFAULT_SERVICE_DETAILS } from "../ServiceTemplate";
 
-const SECTOR_CATEGORIES = [
-  { id: "interior", title: "الديكور الداخلي والتشطيبات" },
-  { id: "aluminum", title: "أعمال الألمنيوم والواجهات" },
-  { id: "carpentry", title: "النجارة والديكور الخشبي المخصص" },
-  { id: "commercial", title: "المشاريع التجارية والطبية" },
-  { id: "construction", title: "العوازل والترميم الإنشائي" },
+// التعريف الدقيق للقطاعات الخمسة الأساسية المطابقة 100% للموقع الحالي
+const SECTORS_CONFIG = [
+  {
+    shortId: "interior",
+    serviceId: "interior-design",
+    defaultTitle: "الديكور الداخلي والتشطيبات",
+    defaultSubtitle: "Interior Design & Fit-Out",
+    icon: Layers,
+    badgeColor: "text-amber-400 bg-amber-400/10 border-amber-400/30",
+  },
+  {
+    shortId: "aluminum",
+    serviceId: "aluminum-facades",
+    defaultTitle: "أعمال الألمنيوم والواجهات",
+    defaultSubtitle: "Aluminum & Facades",
+    icon: Building2,
+    badgeColor: "text-blue-400 bg-blue-400/10 border-blue-400/30",
+  },
+  {
+    shortId: "carpentry",
+    serviceId: "custom-carpentry",
+    defaultTitle: "النجارة والديكور الخشبي المخصص",
+    defaultSubtitle: "Custom Carpentry",
+    icon: Hammer,
+    badgeColor: "text-orange-400 bg-orange-400/10 border-orange-400/30",
+  },
+  {
+    shortId: "commercial",
+    serviceId: "commercial-medical",
+    defaultTitle: "المشاريع التجارية والطبية",
+    defaultSubtitle: "Commercial & Medical Projects",
+    icon: Briefcase,
+    badgeColor: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30",
+  },
+  {
+    shortId: "construction",
+    serviceId: "insulation-waterproofing",
+    defaultTitle: "العزل والترميم الإنشائي",
+    defaultSubtitle: "Waterproofing & Insulation",
+    icon: ShieldCheck,
+    badgeColor: "text-purple-400 bg-purple-400/10 border-purple-400/30",
+  },
 ];
 
-const COMMON_ICONS = [
-  "Sofa", "PaintBucket", "Hammer", "Building2", "Briefcase", 
-  "Construction", "Layers3", "Trees", "Utensils", "Home", "Sparkles", "Boxes"
-];
+const AVAILABLE_ICONS = ["ShieldCheck", "PencilRuler", "Clock", "Sparkles", "CheckCircle2"];
+
+/**
+ * دالة استخراج البيانات التلقائي من الموقع والدمج مع قاعدة البيانات الحالية
+ * تضمن عدم فقدان أي حرف أو صورة أو مشروع موجود حالياً بالموقع
+ */
+function getSectorData(serviceId, pageConfig) {
+  const customData = pageConfig?.serviceDetails?.[serviceId] || {};
+  const defaultData = DEFAULT_SERVICE_DETAILS?.[serviceId] || {
+    title: "عنوان القطاع",
+    subtitle: "Service Sector",
+    description: "",
+    about: "",
+    heroImage: "",
+    aboutImage: "",
+    gallery: [],
+    subServices: [],
+    features: [],
+    process: [
+      { step: "01", title: "المعاينة والاستشارة", desc: "" },
+      { step: "02", title: "التصميم والتخطيط", desc: "" },
+      { step: "03", title: "التنفيذ والإشراف", desc: "" },
+      { step: "04", title: "التسليم النهائي", desc: "" },
+    ],
+  };
+
+  return {
+    ...defaultData,
+    ...customData,
+    gallery: customData.gallery !== undefined ? customData.gallery : (defaultData.gallery || []),
+    subServices: customData.subServices !== undefined ? customData.subServices : (defaultData.subServices || []),
+    features: customData.features !== undefined ? customData.features : (defaultData.features || []),
+    process: customData.process !== undefined ? customData.process : (defaultData.process || []),
+  };
+}
 
 export default function AdminServices() {
-  const { services = [], addService, updateService, deleteService } = useSiteData();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const { pageConfig = {}, setEntirePageConfig } = useSiteData();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingService, setEditingService] = useState(null);
-  const [formData, setFormData] = useState(getEmptyService());
+  // الحالة الرئيسية: null تعني عرض قائمة القطاعات الخمسة، قيمة معرف تعني فتح الصفحة الخاصة بالقطاع
+  const [selectedSectorId, setSelectedSectorId] = useState(null);
+  const [editData, setEditData] = useState(null);
+
+  // حالة إدارة الوسائط والمكتبة
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  const [mediaTarget, setMediaTarget] = useState(null);
 
-  function getEmptyService() {
-    return {
-      title: "",
-      categoryId: "interior",
-      categoryTitle: "الديكور الداخلي والتشطيبات",
-      icon: "Sparkles",
-      desc: "",
-      image: "",
-      order: (services?.length || 0) + 1,
-    };
-  }
-
-  const handleOpenCreate = () => {
-    setEditingService(null);
-    setFormData({ ...getEmptyService(), order: services.length + 1 });
-    setIsModalOpen(true);
-  };
-
-  const handleOpenEdit = (service) => {
-    setEditingService(service);
-    setFormData({ ...getEmptyService(), ...service });
-    setIsModalOpen(true);
-  };
-
-  const handleSave = (e) => {
-    e.preventDefault();
-    if (!formData.title.trim()) {
-      toast.error("يرجى إدخال عنوان الخدمة");
-      return;
+  // تحديث البيانات المستخرجة عند فتح أي قطاع أو تغير الحالة العامة
+  useEffect(() => {
+    if (selectedSectorId) {
+      setEditData(getSectorData(selectedSectorId, pageConfig));
     }
+  }, [selectedSectorId, pageConfig?.serviceDetails]);
 
-    const catObj = SECTOR_CATEGORIES.find(c => c.id === formData.categoryId) || SECTOR_CATEGORIES[0];
-    const cleanData = {
-      ...formData,
-      categoryTitle: catObj.title,
-      order: Number(formData.order) || 1,
+  // فتح صفحة إدارة القطاع المرتكزة
+  const handleOpenSectorPage = (serviceId) => {
+    setSelectedSectorId(serviceId);
+    setEditData(getSectorData(serviceId, pageConfig));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // العودة إلى قائمة القطاعات
+  const handleBackToHub = () => {
+    setSelectedSectorId(null);
+    setEditData(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // حفظ ونشر التعديلات فوراً في قاعدة البيانات والموقع
+  const handleSaveSector = (e) => {
+    if (e) e.preventDefault();
+    if (!selectedSectorId || !editData) return;
+
+    const currentSectorConfig = SECTORS_CONFIG.find((s) => s.serviceId === selectedSectorId);
+    const shortId = currentSectorConfig?.shortId;
+
+    // تحديث تفاصيل الخدمة الفورية
+    const newServiceDetails = {
+      ...(pageConfig?.serviceDetails || {}),
+      [selectedSectorId]: editData,
     };
 
-    if (editingService) {
-      updateService(editingService.id, cleanData);
-      toast.success("تم تحديث بيانات الخدمة بنجاح");
-    } else {
-      addService(cleanData);
-      toast.success("تم إدراج الخدمة الجديدة بنجاح");
+    // مزامنة العنوان والصورة الرئيسية مع قائمة البطاقات العامة (servicesPage.sectors) إن وجدت
+    const currentSectorsList = [...(pageConfig?.servicesPage?.sectors || [])];
+    const sectorIdx = currentSectorsList.findIndex((s) => s.id === shortId);
+    if (sectorIdx >= 0) {
+      currentSectorsList[sectorIdx] = {
+        ...currentSectorsList[sectorIdx],
+        title: editData.title || currentSectorsList[sectorIdx].title,
+        image: editData.heroImage || currentSectorsList[sectorIdx].image,
+      };
     }
-    setIsModalOpen(false);
+
+    setEntirePageConfig({
+      serviceDetails: newServiceDetails,
+      ...(sectorIdx >= 0
+        ? { servicesPage: { ...(pageConfig?.servicesPage || {}), sectors: currentSectorsList } }
+        : {}),
+    });
+
+    toast.success(
+      `تم الحفظ بنجاح! نُقلت كافة بيانات وصور ومشاريع (${editData.title}) إلى قاعدة البيانات وظهرت في الموقع فوراً.`
+    );
   };
 
-  const handleDelete = (id, title) => {
-    if (window.confirm(`هل أنت متأكد من حذف خدمة "${title}" نهائياً من القائمة؟`)) {
-      deleteService(id);
-      toast.success("تم حذف الخدمة");
-    }
-  };
-
+  // معالجة اختيار أو رفع صورة جديدة من جهاز المستخدم أو المكتبة
   const handleImageSelected = (url) => {
-    setFormData(prev => ({ ...prev, image: url }));
-    toast.success("تم تعيين صورة الخدمة");
+    if (!mediaTarget || !editData) return;
+
+    if (mediaTarget.type === "hero") {
+      setEditData((prev) => ({ ...prev, heroImage: url }));
+      toast.success("تم تحديث صورة الجزء العلوي (Hero) - اضغط حفظ لتنفيذ النشر");
+    } else if (mediaTarget.type === "about") {
+      setEditData((prev) => ({ ...prev, aboutImage: url }));
+      toast.success("تم تحديث صورة النبذة (عن الخدمة) - اضغط حفظ لتنفيذ النشر");
+    } else if (mediaTarget.type === "galleryAdd") {
+      setEditData((prev) => ({
+        ...prev,
+        gallery: [...(prev.gallery || []), url],
+      }));
+      toast.success("تمت إضافة صورة مشروع منفذ جديد إلى القائمة بنجاح");
+    } else if (mediaTarget.type === "galleryReplace" && typeof mediaTarget.index === "number") {
+      setEditData((prev) => {
+        const newG = [...(prev.gallery || [])];
+        newG[mediaTarget.index] = url;
+        return { ...prev, gallery: newG };
+      });
+      toast.success("تم استبدال صورة المشروع المنفذ بنجاح");
+    }
     setMediaPickerOpen(false);
   };
 
-  const sortedServices = [...services].sort((a, b) => (a.order || 0) - (b.order || 0));
-  const filteredServices = sortedServices.filter((s) => {
-    const matchSearch = (s.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        (s.desc || "").toLowerCase().includes(searchTerm.toLowerCase());
-    if (!matchSearch) return false;
-    if (selectedCategory !== "all" && s.categoryId !== selectedCategory) return false;
-    return true;
-  });
+  // معالجة إعادة ترتيب المشاريع (نقل أعلى / أسفل)
+  const handleMoveProjectUp = (idx) => {
+    if (idx <= 0 || !editData) return;
+    const newGallery = [...(editData.gallery || [])];
+    const temp = newGallery[idx - 1];
+    newGallery[idx - 1] = newGallery[idx];
+    newGallery[idx] = temp;
+    setEditData((prev) => ({ ...prev, gallery: newGallery }));
+    toast.success("تم تعديل ترتيب المشروع للأعلى (اضغط حفظ لاعتماد الترتيب الجديد بالموقع)");
+  };
+
+  const handleMoveProjectDown = (idx) => {
+    if (!editData || idx >= (editData.gallery || []).length - 1) return;
+    const newGallery = [...(editData.gallery || [])];
+    const temp = newGallery[idx + 1];
+    newGallery[idx + 1] = newGallery[idx];
+    newGallery[idx] = temp;
+    setEditData((prev) => ({ ...prev, gallery: newGallery }));
+    toast.success("تم تعديل ترتيب المشروع للأسفل (اضغط حفظ لاعتماد الترتيب الجديد بالموقع)");
+  };
+
+  // معالجة حذف مشروع
+  const handleDeleteProject = (idx) => {
+    if (window.confirm("هل أنت متأكد من رغبتك في حذف هذا المشروع المنفذ من قائمة أعمال القطاع؟")) {
+      setEditData((prev) => ({
+        ...prev,
+        gallery: (prev.gallery || []).filter((_, i) => i !== idx),
+      }));
+      toast.success("تم حذف المشروع من قائمة القطاع (اضغط حفظ لنشر التغيير فوراً)");
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  // العرض الأول: الصفحة الرئيسية لإدارة الخدمات والقطاعات (خدماتنا) - شبكة القطاعات
+  // -------------------------------------------------------------------------
+  if (!selectedSectorId || !editData) {
+    return (
+      <div className="space-y-8" dir="rtl">
+        {/* رأس القسم */}
+        <div className="bg-[#111] border border-[#D4AF37]/40 p-6 sm:p-8 rounded-2xl shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-80 h-80 bg-gradient-to-br from-[#D4AF37]/10 via-transparent to-transparent rounded-full pointer-events-none -translate-x-20 -translate-y-20" />
+          <div className="relative z-10 space-y-3">
+            <div className="inline-flex items-center gap-2 text-[#D4AF37] text-xs font-extrabold px-3 py-1.5 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30">
+              <Layers size={16} />
+              <span>إدارة المحتوى المباشرة — قسم خدماتنا</span>
+            </div>
+            <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-white">
+              إدارة الخدمات والقطاعات (خدماتنا)
+            </h1>
+            <p className="text-white/70 text-sm sm:text-base max-w-3xl leading-relaxed">
+              هذا القسم هو المسؤول الوحيد والشامل عن إدارة كافة بيانات قسم <strong className="text-[#D4AF37]">"خدماتنا"</strong> بالموقع. تم استخراج جميع العناوين، النصوص، والمشاريع المنفذة الحالية تلقائياً من الموقع. اضغط على أي قطاع للدخول إلى صفحته الخاصة وتعديله بالكامل، وستنعكس التعديلات في الموقع فوراً بعد الحفظ.
+            </p>
+          </div>
+        </div>
+
+        {/* شبكة القطاعات الخمسة */}
+        <div className="space-y-4">
+          <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
+            <Sparkles className="text-[#D4AF37]" size={20} />
+            <span>القطاعات الخمسة الأساسية في الموقع (اضغط على القطاع للإدارة والتعديل):</span>
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {SECTORS_CONFIG.map((sector, index) => {
+              const currentData = getSectorData(sector.serviceId, pageConfig);
+              const SectorIcon = sector.icon || Layers;
+              const projectsCount = (currentData.gallery || []).length;
+
+              return (
+                <div
+                  key={sector.serviceId}
+                  onClick={() => handleOpenSectorPage(sector.serviceId)}
+                  className="group bg-[#111] border border-white/10 hover:border-[#D4AF37]/60 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 shadow-lg hover:shadow-[0_0_25px_rgba(212,175,55,0.15)] flex flex-col justify-between"
+                >
+                  <div>
+                    {/* الصورة الخلفية للبطاقة */}
+                    <div className="aspect-[16/9] relative overflow-hidden bg-black">
+                      {currentData.heroImage ? (
+                        <SafeImage
+                          src={currentData.heroImage}
+                          alt={currentData.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-[#1a1a1a] text-white/20">
+                          <ImageIcon size={32} />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
+                      
+                      <div className="absolute top-4 right-4 flex items-center gap-2">
+                        <span className="w-8 h-8 rounded-lg bg-black/80 backdrop-blur-md border border-[#D4AF37]/40 flex items-center justify-center font-mono font-bold text-xs text-[#D4AF37]">
+                          {index + 1}
+                        </span>
+                      </div>
+
+                      <div className="absolute bottom-4 right-4 left-4 flex items-center justify-between">
+                        <span className={`text-xs font-extrabold px-3 py-1 rounded-full border backdrop-blur-md ${sector.badgeColor}`}>
+                          {projectsCount} مشاريع منفذة
+                        </span>
+                        <SectorIcon size={20} className="text-[#D4AF37]" />
+                      </div>
+                    </div>
+
+                    {/* المحتوى والتفاصيل */}
+                    <div className="p-6 space-y-3">
+                      <div className="space-y-1">
+                        <h3 className="font-display text-xl font-bold text-white group-hover:text-[#D4AF37] transition-colors">
+                          {currentData.title || sector.defaultTitle}
+                        </h3>
+                        <p className="text-white/40 font-mono text-xs dir-ltr text-right">
+                          {currentData.subtitle || sector.defaultSubtitle}
+                        </p>
+                      </div>
+
+                      <p className="text-white/60 text-xs leading-relaxed line-clamp-3">
+                        {currentData.description || currentData.about || "لا يوجد وصف مختصر متاح لهذا القطاع."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* زر الفتح وإدارة المحتوى */}
+                  <div className="p-4 bg-black/60 border-t border-white/5 flex items-center justify-between group-hover:bg-[#D4AF37]/10 transition-colors">
+                    <span className="font-display font-extrabold text-xs text-[#D4AF37] group-hover:underline">
+                      فتح وإدارة بيانات هذا القطاع بالكامل
+                    </span>
+                    <ChevronRight size={18} className="text-[#D4AF37] transform group-hover:translate-x-1 transition-transform rotate-180" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // العرض الثاني: صفحة إدارة القطاع المرتكزة (تفتح خاصة بهذا القطاع فقط)
+  // -------------------------------------------------------------------------
+  const activeConfig = SECTORS_CONFIG.find((s) => s.serviceId === selectedSectorId);
 
   return (
-    <div className="space-y-6" dir="rtl">
-      {/* Header Banner */}
-      <div className="bg-[#111] border border-[#D4AF37]/30 p-6 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-[#D4AF37] text-xs font-bold uppercase tracking-wide mb-1">
-            <Layers size={16} />
-            <span>إدارة وتطوير خدمات المؤسسة والقطاعات</span>
+    <div className="space-y-8 pb-16" dir="rtl">
+      {/* شريط الإبحار العلوي في صفحة القطاع */}
+      <div className="sticky top-0 z-40 bg-[#111]/95 backdrop-blur-md border border-[#D4AF37]/50 p-4 sm:p-6 rounded-2xl shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleBackToHub}
+            type="button"
+            className="bg-black hover:bg-white/10 text-white border border-white/20 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition-all shrink-0 shadow-sm hover:border-[#D4AF37]"
+          >
+            <ArrowRight size={18} className="text-[#D4AF37]" />
+            <span>العودة لكافة القطاعات (خدماتنا)</span>
+          </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#D4AF37] font-bold">إدارة بيانات القطاع:</span>
+            </div>
+            <h1 className="font-display font-extrabold text-xl sm:text-2xl text-white">
+              {editData.title || activeConfig?.defaultTitle}
+            </h1>
           </div>
-          <h2 className="font-display text-2xl font-bold text-white">
-            قائمة الخدمات المتخصصة ({services.length})
-          </h2>
-          <p className="text-white/60 text-sm mt-1">
-            تحكم بتفاصيل الخدمات الفرعية المدرجة تحت القطاعات الخمسة الكبرى. التعديل يتم فوراً وينعكس بالموقع العام.
-          </p>
         </div>
 
         <button
-          onClick={handleOpenCreate}
-          className="bg-[#D4AF37] text-black px-6 py-3.5 rounded-lg font-display font-bold text-sm hover:bg-[#C5A030] transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(212,175,55,0.25)] shrink-0"
+          onClick={handleSaveSector}
+          type="button"
+          className="bg-[#D4AF37] hover:bg-[#C5A030] text-black font-extrabold px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(212,175,55,0.3)] hover:shadow-[0_0_30px_rgba(212,175,55,0.5)] transition-all shrink-0 text-sm scale-105 hover:scale-110"
         >
-          <Plus size={18} />
-          <span>إضافة خدمة جديدة</span>
+          <Save size={20} />
+          <span>حفظ ونشر التعديلات فوراً بالموقع</span>
         </button>
       </div>
 
-      {/* Filters & Search */}
-      <div className="bg-[#111] border border-white/10 p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="relative w-full sm:w-80">
-          <input
-            type="text"
-            placeholder="ابحث باسم الخدمة أو الوصف..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-lg pr-10 pl-4 py-2.5 text-sm focus:outline-none focus:border-[#D4AF37]"
-          />
-          <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40" />
-        </div>
+      <form onSubmit={handleSaveSector} className="space-y-8">
+        {/* 1. القسم الأول: عناوين ونصوص أعلى الصفحة وصورة الخلفية (Hero Section) */}
+        <div className="bg-[#111] border border-white/10 p-6 sm:p-8 rounded-2xl space-y-6 shadow-xl">
+          <div className="flex items-center gap-2 border-b border-white/10 pb-4">
+            <Info size={22} className="text-[#D4AF37]" />
+            <h2 className="font-display font-bold text-lg text-white">
+              أولاً: عناوين ونصوص أعلى الصفحة (Hero Section) وصورة الخلفية
+            </h2>
+          </div>
 
-        <div className="flex overflow-x-auto gap-2 w-full sm:w-auto custom-scrollbar pb-1 sm:pb-0">
-          <button
-            onClick={() => setSelectedCategory("all")}
-            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
-              selectedCategory === "all" ? "bg-[#D4AF37] text-black" : "bg-black text-white/70 hover:text-white border border-white/10"
-            }`}
-          >
-            جميع القطاعات ({services.length})
-          </button>
-          {SECTOR_CATEGORIES.map((cat) => {
-            const count = services.filter(s => s.categoryId === cat.id).length;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
-                  selectedCategory === cat.id ? "bg-[#D4AF37] text-black" : "bg-black text-white/70 hover:text-white border border-white/10"
-                }`}
-              >
-                {cat.title} ({count})
-              </button>
-            );
-          })}
-        </div>
-      </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs font-extrabold text-white/80 mb-2">
+                العنوان الرئيسي للقطاع (عربي) <span className="text-[#D4AF37]">*</span>:
+              </label>
+              <input
+                type="text"
+                required
+                value={editData.title || ""}
+                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-xl p-3.5 text-sm focus:outline-none focus:border-[#D4AF37] font-bold"
+                placeholder="مثال: الديكور الداخلي والتشطيبات"
+              />
+            </div>
 
-      {/* Services Cards Grid */}
-      {filteredServices.length === 0 ? (
-        <div className="bg-[#111] border border-[#D4AF37]/20 rounded-xl p-12 text-center text-white/50">
-          <Layers size={52} className="mx-auto text-[#D4AF37]/30 mb-3" />
-          <h3 className="text-lg font-bold text-white mb-1">لا توجد خدمات مطابقة</h3>
-          <p className="text-xs text-white/40">يمكنك إضافة خدمة عبر زر "إضافة خدمة جديدة" في الأعلى.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredServices.map((srv) => (
-            <div
-              key={srv.id}
-              className="bg-[#111] border border-[#D4AF37]/20 hover:border-[#D4AF37] rounded-xl p-6 transition-all duration-300 flex flex-col justify-between group hover:shadow-[0_0_20px_rgba(212,175,55,0.15)] relative overflow-hidden"
-            >
-              <div className="absolute -right-12 -top-12 w-28 h-28 bg-[#D4AF37]/5 rounded-full blur-xl pointer-events-none" />
+            <div>
+              <label className="block text-xs font-extrabold text-white/80 mb-2">
+                العنوان الفرعي أو الإنجليزي (Subtitle):
+              </label>
+              <input
+                type="text"
+                value={editData.subtitle || ""}
+                onChange={(e) => setEditData({ ...editData, subtitle: e.target.value })}
+                className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-xl p-3.5 text-sm focus:outline-none focus:border-[#D4AF37] font-mono dir-ltr text-right"
+                placeholder="Interior Design & Fit-Out"
+              />
+            </div>
+          </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="px-2.5 py-1 rounded bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30 font-bold text-xs">
-                    {srv.categoryTitle || srv.categoryId}
-                  </span>
-                  <span className="text-white/40 font-mono text-xs">#{srv.order}</span>
-                </div>
+          <div>
+            <label className="block text-xs font-extrabold text-white/80 mb-2">
+              الوصف المختصر أعلى الصفحة (تحت العنوان مباشرة):
+            </label>
+            <textarea
+              rows={3}
+              value={editData.description || ""}
+              onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+              className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-xl p-3.5 text-sm focus:outline-none focus:border-[#D4AF37] leading-relaxed"
+              placeholder="اكتب وصفاً مختصراً يظهر في واجهة صفحة هذا القطاع بالموقع..."
+            />
+          </div>
 
-                <h3 className="font-display font-bold text-lg text-white group-hover:text-[#D4AF37] transition-colors mb-2">
-                  {srv.title}
-                </h3>
-
-                <p className="text-white/60 text-xs leading-relaxed line-clamp-3 mb-4">
-                  {srv.desc || "لا يوجد وصف مدون لهذه الخدمة."}
-                </p>
-
-                {srv.image && (
-                  <div className="w-full h-28 rounded-lg overflow-hidden border border-white/10 mb-4 bg-black">
-                    <SafeImage src={srv.image} alt={srv.title} fallbackType="portfolio" className="w-full h-full object-cover" />
+          {/* الصورة الرئيسية للقطاع */}
+          <div className="p-5 bg-black/60 rounded-xl border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-28 h-20 rounded-xl overflow-hidden bg-[#1a1a1a] border border-white/15 shrink-0">
+                {editData.heroImage ? (
+                  <SafeImage src={editData.heroImage} alt="hero" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/30">
+                    <ImageIcon size={28} />
                   </div>
                 )}
               </div>
-
-              <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                <span className="text-[11px] text-white/40 font-mono">الأيقونة: {srv.icon || "Default"}</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleOpenEdit(srv)}
-                    className="p-2 bg-[#D4AF37]/10 hover:bg-[#D4AF37] text-[#D4AF37] hover:text-black border border-[#D4AF37]/30 rounded-lg transition-all text-xs font-bold flex items-center gap-1.5"
-                    title="تعديل الخدمة"
-                  >
-                    <Edit2 size={15} /> تعديل
-                  </button>
-                  <button
-                    onClick={() => handleDelete(srv.id, srv.title)}
-                    className="p-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/30 rounded-lg transition-all text-xs font-bold"
-                    title="حذف الخدمة"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
+              <div className="space-y-1">
+                <span className="text-sm font-extrabold text-white block">صورة خلفية أعلى الصفحة (Hero Image)</span>
+                <span className="text-xs text-white/50 leading-relaxed block">
+                  تظهر كخلفية فاخرة في الجزء العلوي عند دخول الزائر لصفحة هذا القطاع، وكذلك كبطاقة للقطاع في قائمة الخدمات.
+                </span>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Create / Edit Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setIsModalOpen(false)}>
-          <div
-            className="bg-[#111] border border-[#D4AF37]/40 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 bg-black border-b border-[#D4AF37]/20 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37]">
-                  <Layers size={20} />
-                </div>
-                <h3 className="font-display font-bold text-lg text-white">
-                  {editingService ? `تعديل الخدمة: ${editingService.title}` : "إدراج خدمة هندسية جديدة"}
-                </h3>
-              </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-white/50 hover:text-white p-1">
-                <X size={22} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSave} className="p-6 space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-white/80 mb-2">اسم الخدمة <span className="text-[#D4AF37]">*</span>:</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-lg p-3 text-sm focus:outline-none focus:border-[#D4AF37]"
-                    placeholder="مثال: تصاميم غرف النوم الكلاسيكية"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-white/80 mb-2">القطاع التابع له:</label>
-                  <select
-                    value={formData.categoryId}
-                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-lg p-3 text-sm focus:outline-none focus:border-[#D4AF37]"
-                  >
-                    {SECTOR_CATEGORIES.map(c => (
-                      <option key={c.id} value={c.id}>{c.title}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-white/80 mb-2">الوصف التفصيلي للخدمة:</label>
-                <textarea
-                  rows={3}
-                  value={formData.desc || ""}
-                  onChange={(e) => setFormData({ ...formData, desc: e.target.value })}
-                  className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-lg p-3 text-sm focus:outline-none focus:border-[#D4AF37] leading-relaxed"
-                  placeholder="اكتب نبذة عن مميزات هذه الخدمة ومعايير الجودة المتبعة..."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-white/80 mb-2">رمز الأيقونة (Lucide Icon Name):</label>
-                  <select
-                    value={formData.icon || "Sparkles"}
-                    onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                    className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-lg p-3 text-sm focus:outline-none focus:border-[#D4AF37] dir-ltr text-right"
-                  >
-                    {COMMON_ICONS.map(ic => (
-                      <option key={ic} value={ic}>{ic}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-white/80 mb-2">الترتيب بقائمة الخدمات:</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={formData.order || 1}
-                    onChange={(e) => setFormData({ ...formData, order: Number(e.target.value) })}
-                    className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-lg p-3 text-sm text-center dir-ltr"
-                  />
-                </div>
-              </div>
-
-              {/* Service Image (Optional) */}
-              <div className="p-3 bg-black rounded-xl border border-white/10 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-[#111] border border-white/10 flex items-center justify-center">
-                    {formData.image ? (
-                      <SafeImage src={formData.image} alt="srv" className="w-full h-full object-cover" />
-                    ) : (
-                      <ImageIcon size={22} className="text-white/30" />
-                    )}
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-white block">صورة توضيحية للخدمة</span>
-                    <span className="text-[10px] text-white/40">اختياري: يعزز مظهر الخدمة عند العرض التفصيلي</span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setMediaPickerOpen(true)}
-                  className="bg-white/10 hover:bg-[#D4AF37] hover:text-black text-white px-4 py-2 rounded text-xs font-bold transition-all shrink-0"
-                >
-                  {formData.image ? "تغيير الصورة" : "اختيار صورة"}
-                </button>
-              </div>
-
-              <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-bold transition-colors">
-                  إلغاء
-                </button>
-                <button type="submit" className="px-6 py-2.5 bg-[#D4AF37] hover:bg-[#C5A030] text-black rounded-lg text-sm font-bold transition-all shadow-md flex items-center gap-2">
-                  <Check size={18} />
-                  <span>{editingService ? "حفظ التعديلات" : "إعتماد وإضافة الخدمة"}</span>
-                </button>
-              </div>
-            </form>
+            <button
+              type="button"
+              onClick={() => {
+                setMediaTarget({ type: "hero" });
+                setMediaPickerOpen(true);
+              }}
+              className="bg-white/10 hover:bg-[#D4AF37] hover:text-black text-white px-5 py-3 rounded-xl font-bold text-xs transition-all shrink-0 flex items-center gap-2 shadow-sm"
+            >
+              <ImageIcon size={16} />
+              <span>{editData.heroImage ? "تغيير الصورة أو رفع جديدة" : "اختيار أو رفع صورة"}</span>
+            </button>
           </div>
         </div>
-      )}
 
+        {/* 2. القسم الثاني: النبذة التفصيلية عن الخدمة وصورتها التوضيحية (About Section) */}
+        <div className="bg-[#111] border border-white/10 p-6 sm:p-8 rounded-2xl space-y-6 shadow-xl">
+          <div className="flex items-center gap-2 border-b border-white/10 pb-4">
+            <FileText size={22} className="text-[#D4AF37]" />
+            <h2 className="font-display font-bold text-lg text-white">
+              ثانياً: النبذة التفصيلية عن الخدمة (قسم "عن الخدمة")
+            </h2>
+          </div>
+
+          <div>
+            <label className="block text-xs font-extrabold text-white/80 mb-2">
+              النص التعريفي والنبذة المفصلة عن خدمات هذا القطاع:
+            </label>
+            <textarea
+              rows={5}
+              value={editData.about || ""}
+              onChange={(e) => setEditData({ ...editData, about: e.target.value })}
+              className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-xl p-4 text-sm focus:outline-none focus:border-[#D4AF37] leading-relaxed"
+              placeholder="اكتب هنا التفاصيل الشاملة والنبذة التعريفية بالقطاع والمواد والأساليب المستخدمة..."
+            />
+          </div>
+
+          <div className="p-5 bg-black/60 rounded-xl border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-28 h-20 rounded-xl overflow-hidden bg-[#1a1a1a] border border-white/15 shrink-0">
+                {editData.aboutImage ? (
+                  <SafeImage src={editData.aboutImage} alt="about" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/30">
+                    <ImageIcon size={28} />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-extrabold text-white block">الصورة التوضيحية بجانب نص النبذة</span>
+                <span className="text-xs text-white/50 leading-relaxed block">
+                  تظهر بجانب النص التعريفي في منتصف صفحة القطاع في الموقع.
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setMediaTarget({ type: "about" });
+                setMediaPickerOpen(true);
+              }}
+              className="bg-white/10 hover:bg-[#D4AF37] hover:text-black text-white px-5 py-3 rounded-xl font-bold text-xs transition-all shrink-0 flex items-center gap-2 shadow-sm"
+            >
+              <ImageIcon size={16} />
+              <span>{editData.aboutImage ? "تغيير الصورة أو رفع جديدة" : "اختيار أو رفع صورة"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 3. القسم الثالث: معرض المشاريع المنفذة الخاصة بهذا القطاع */}
+        <div className="bg-[#111] border border-[#D4AF37]/50 p-6 sm:p-8 rounded-2xl space-y-6 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-[#D4AF37]/5 rounded-bl-full pointer-events-none" />
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4 relative z-10">
+            <div>
+              <h2 className="font-display font-bold text-xl text-white flex items-center gap-2">
+                <Camera className="text-[#D4AF37]" size={24} />
+                <span>ثالثاً: إدارة المشاريع المنفذة وصور أعمالنا الخاصة بهذا القطاع</span>
+              </h2>
+              <p className="text-white/60 text-xs sm:text-sm mt-1">
+                تظهر هذه الصور في قسم <strong className="text-white">"أعمالنا تتحدث عنا"</strong> بصفحة هذا القطاع. يمكنك إضافة مشاريع جديدة، حذف المشاريع، استبدال الصور، وتعديل الترتيب كما تشاء.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setMediaTarget({ type: "galleryAdd" });
+                setMediaPickerOpen(true);
+              }}
+              className="bg-[#D4AF37] hover:bg-[#C5A030] text-black font-extrabold px-6 py-3.5 rounded-xl flex items-center gap-2 shadow-lg transition-all text-xs sm:text-sm shrink-0 scale-105 hover:scale-110"
+            >
+              <Plus size={20} />
+              <span>إضافة مشروع منفذ جديد</span>
+            </button>
+          </div>
+
+          {(!editData.gallery || editData.gallery.length === 0) ? (
+            <div className="text-center py-14 border-2 border-dashed border-white/20 rounded-2xl bg-black/50 space-y-3">
+              <Camera size={48} className="text-white/20 mx-auto" />
+              <p className="text-white/70 text-base font-bold">لا توجد صور مشاريع منفذة مضافة لهذا القطاع بعد.</p>
+              <p className="text-white/40 text-xs">
+                اضغط على زر "إضافة مشروع منفذ جديد" بالأعلى لرفع صور من جهازك أو اختيارها من المكتبة.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+              {editData.gallery.map((imgUrl, gIdx) => (
+                <div
+                  key={gIdx}
+                  className="bg-black border border-white/15 rounded-2xl overflow-hidden group shadow-lg hover:border-[#D4AF37]/60 transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="aspect-[4/3] relative overflow-hidden bg-[#111]">
+                      <SafeImage
+                        src={imgUrl}
+                        alt={`project_${gIdx}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-md text-[#D4AF37] text-xs font-extrabold px-3 py-1 rounded-full border border-[#D4AF37]/30 shadow-md">
+                        مشروع منفذ #{gIdx + 1}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* أزرار التحكم بالمشروع (استبدال، ترتيب فوق/تحت، حذف) */}
+                  <div className="p-3 bg-[#151515] border-t border-white/10 space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMediaTarget({ type: "galleryReplace", index: gIdx });
+                        setMediaPickerOpen(true);
+                      }}
+                      className="w-full py-2.5 px-3 bg-white/10 hover:bg-[#D4AF37] hover:text-black text-white rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <Edit2 size={15} />
+                      <span>استبدال / تعديل الصورة</span>
+                    </button>
+
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1 flex-1">
+                        <button
+                          type="button"
+                          disabled={gIdx === 0}
+                          onClick={() => handleMoveProjectUp(gIdx)}
+                          className={`flex-1 py-2 px-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1 transition-all border ${
+                            gIdx === 0
+                              ? "bg-black text-white/20 border-white/5 cursor-not-allowed"
+                              : "bg-black hover:bg-white/10 text-white/80 border-white/15 hover:border-[#D4AF37]/50"
+                          }`}
+                          title="نقل المشروع للأعلى في الترتيب"
+                        >
+                          <ArrowUp size={14} />
+                          <span>أعلى</span>
+                        </button>
+                        <button
+                          type="button"
+                          disabled={gIdx === (editData.gallery || []).length - 1}
+                          onClick={() => handleMoveProjectDown(gIdx)}
+                          className={`flex-1 py-2 px-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1 transition-all border ${
+                            gIdx === (editData.gallery || []).length - 1
+                              ? "bg-black text-white/20 border-white/5 cursor-not-allowed"
+                              : "bg-black hover:bg-white/10 text-white/80 border-white/15 hover:border-[#D4AF37]/50"
+                          }`}
+                          title="نقل المشروع للأسفل في الترتيب"
+                        >
+                          <span>أسفل</span>
+                          <ArrowDown size={14} />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProject(gIdx)}
+                        className="p-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-lg transition-all border border-red-500/20 hover:border-transparent shrink-0"
+                        title="حذف هذا المشروع"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 4. القسم الرابع: مجالات الاختصاص والتطبيقات */}
+        <div className="bg-[#111] border border-white/10 p-6 sm:p-8 rounded-2xl space-y-6 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+            <div>
+              <h2 className="font-display font-bold text-lg text-white flex items-center gap-2">
+                <ListCheck className="text-[#D4AF37]" size={22} />
+                <span>رابعاً: مجالات الاختصاص والتطبيقات (الخدمات الفرعية بصفحة القطاع)</span>
+              </h2>
+              <p className="text-white/50 text-xs mt-1">
+                الصناديق التخصصية التي تظهر تحت عنوان "مجالات اختصاصنا" في صفحة القطاع.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const newSubs = [...(editData.subServices || [])];
+                newSubs.push({
+                  id: `sub_${Date.now()}`,
+                  title: "مجال اختصاص جديد",
+                  items: ["بند أول", "بند ثاني"],
+                });
+                setEditData({ ...editData, subServices: newSubs });
+                toast.success("تمت إضافة صندوق مجال اختصاص جديد");
+              }}
+              className="bg-white/10 hover:bg-[#D4AF37] hover:text-black text-white font-extrabold px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2 shrink-0"
+            >
+              <Plus size={16} />
+              <span>إضافة مجال اختصاص جديد</span>
+            </button>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {(editData.subServices || []).map((sub, sIdx) => (
+              <div key={sub.id || sIdx} className="p-5 bg-black border border-white/10 rounded-2xl space-y-4 shadow-md">
+                <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+                  <span className="text-xs font-extrabold text-[#D4AF37] px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30">
+                    مجال الاختصاص #{sIdx + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newSubs = (editData.subServices || []).filter((_, i) => i !== sIdx);
+                      setEditData({ ...editData, subServices: newSubs });
+                      toast.success("تم حذف مجال الاختصاص");
+                    }}
+                    className="text-white/40 hover:text-red-400 p-1 transition-colors"
+                    title="حذف هذا المجال"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-white/80 mb-1.5 font-bold">عنوان المجال:</label>
+                  <input
+                    type="text"
+                    value={sub.title || ""}
+                    onChange={(e) => {
+                      const newSubs = [...(editData.subServices || [])];
+                      newSubs[sIdx] = { ...newSubs[sIdx], title: e.target.value };
+                      setEditData({ ...editData, subServices: newSubs });
+                    }}
+                    className="w-full bg-[#111] border border-white/15 text-white rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37]"
+                    placeholder="مثال: الأسقف المعلقة والديكورية"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-white/80 mb-1.5 font-bold">
+                    البنود والتطبيقات (افصل بين كل بند وفاصلة عربية ، أو أجنبية ,):
+                  </label>
+                  <input
+                    type="text"
+                    value={(sub.items || []).join(" ، ")}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const itemsArr = val
+                        .split(/،|,/)
+                        .map((x) => x.trim())
+                        .filter(Boolean);
+                      const newSubs = [...(editData.subServices || [])];
+                      newSubs[sIdx] = { ...newSubs[sIdx], items: itemsArr };
+                      setEditData({ ...editData, subServices: newSubs });
+                    }}
+                    className="w-full bg-[#111] border border-white/15 text-white rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37]"
+                    placeholder="جبسمبورد ، جبس مغربي ، إضاءات مخفية"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 5. القسم الخامس: مميزات وخصائص الخدمة (Why Choose Us) */}
+        <div className="bg-[#111] border border-white/10 p-6 sm:p-8 rounded-2xl space-y-6 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+            <div>
+              <h2 className="font-display font-bold text-lg text-white flex items-center gap-2">
+                <Sparkles className="text-[#D4AF37]" size={22} />
+                <span>خامساً: مميزات وخصائص الخدمة (لماذا تختار خدماتنا؟)</span>
+              </h2>
+              <p className="text-white/50 text-xs mt-1">
+                المميزات الأربعة التي تعرض معايير الجودة والاحترافية في صفحة هذا القطاع.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const newFeat = [...(editData.features || [])];
+                newFeat.push({
+                  icon: "ShieldCheck",
+                  title: "ميزة إضافية",
+                  desc: "وصف الميزة ومستوى الجودة المطبق...",
+                });
+                setEditData({ ...editData, features: newFeat });
+                toast.success("تمت إضافة ميزة جديدة");
+              }}
+              className="bg-white/10 hover:bg-[#D4AF37] hover:text-black text-white font-extrabold px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2 shrink-0"
+            >
+              <Plus size={16} />
+              <span>إضافة ميزة جديدة</span>
+            </button>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {(editData.features || []).map((feat, fIdx) => {
+              const iconName = typeof feat.icon === "string" ? feat.icon : "ShieldCheck";
+
+              return (
+                <div key={fIdx} className="p-4 bg-black border border-white/10 rounded-2xl space-y-3 flex flex-col justify-between shadow-md">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-[#D4AF37]">ميزة #{fIdx + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newFeat = (editData.features || []).filter((_, i) => i !== fIdx);
+                          setEditData({ ...editData, features: newFeat });
+                          toast.success("تم حذف الميزة");
+                        }}
+                        className="text-white/40 hover:text-red-400 transition-colors"
+                        title="حذف الميزة"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-white/70 mb-1 font-bold">اسم الأيقونة البرمجية:</label>
+                      <select
+                        value={iconName}
+                        onChange={(e) => {
+                          const newFeat = [...(editData.features || [])];
+                          newFeat[fIdx] = { ...newFeat[fIdx], icon: e.target.value };
+                          setEditData({ ...editData, features: newFeat });
+                        }}
+                        className="w-full bg-[#111] border border-white/15 text-white rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#D4AF37] dir-ltr text-right font-mono"
+                      >
+                        {AVAILABLE_ICONS.map((icon) => (
+                          <option key={icon} value={icon}>
+                            {icon}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-white/70 mb-1 font-bold">عنوان الميزة:</label>
+                      <input
+                        type="text"
+                        value={feat.title || ""}
+                        onChange={(e) => {
+                          const newFeat = [...(editData.features || [])];
+                          newFeat[fIdx] = { ...newFeat[fIdx], title: e.target.value };
+                          setEditData({ ...editData, features: newFeat });
+                        }}
+                        className="w-full bg-[#111] border border-white/15 text-white rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#D4AF37] font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-white/70 mb-1 font-bold">وصف الميزة:</label>
+                      <textarea
+                        rows={3}
+                        value={feat.desc || ""}
+                        onChange={(e) => {
+                          const newFeat = [...(editData.features || [])];
+                          newFeat[fIdx] = { ...newFeat[fIdx], desc: e.target.value };
+                          setEditData({ ...editData, features: newFeat });
+                        }}
+                        className="w-full bg-[#111] border border-white/15 text-white rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#D4AF37] leading-relaxed"
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 6. القسم السادس: مراحل تنفيذ الخدمة (Process Steps) */}
+        <div className="bg-[#111] border border-white/10 p-6 sm:p-8 rounded-2xl space-y-6 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+            <div>
+              <h2 className="font-display font-bold text-lg text-white flex items-center gap-2">
+                <Settings className="text-[#D4AF37]" size={22} />
+                <span>سادساً: مراحل تنفيذ الخدمة (Process Steps)</span>
+              </h2>
+              <p className="text-white/50 text-xs mt-1">
+                خطوات ومراحل العمل الأربعة المنهجية المعروضة في أسفل صفحة القطاع.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const newProc = [...(editData.process || [])];
+                newProc.push({
+                  step: `0${newProc.length + 1}`,
+                  title: "مرحلة عمل جديدة",
+                  desc: "وصف الإجراءات المتبعة في هذه المرحلة...",
+                });
+                setEditData({ ...editData, process: newProc });
+                toast.success("تمت إضافة مرحلة تنفيذ جديدة");
+              }}
+              className="bg-white/10 hover:bg-[#D4AF37] hover:text-black text-white font-extrabold px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2 shrink-0"
+            >
+              <Plus size={16} />
+              <span>إضافة مرحلة تنفيذ</span>
+            </button>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {(editData.process || []).map((step, stIdx) => (
+              <div key={stIdx} className="p-4 bg-black border border-white/10 rounded-2xl space-y-3 shadow-md relative">
+                <div className="flex items-center justify-between">
+                  <input
+                    type="text"
+                    value={step.step || `0${stIdx + 1}`}
+                    onChange={(e) => {
+                      const newProc = [...(editData.process || [])];
+                      newProc[stIdx] = { ...newProc[stIdx], step: e.target.value };
+                      setEditData({ ...editData, process: newProc });
+                    }}
+                    className="w-14 h-10 bg-[#111] border border-[#D4AF37]/50 text-[#D4AF37] text-center font-bold text-sm rounded-xl focus:outline-none font-mono"
+                    title="رقم أو رمز المرحلة"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newProc = (editData.process || []).filter((_, i) => i !== stIdx);
+                      setEditData({ ...editData, process: newProc });
+                      toast.success("تم حذف المرحلة");
+                    }}
+                    className="text-white/40 hover:text-red-400 p-1 transition-colors"
+                    title="حذف المرحلة"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] text-white/70 mb-1 font-bold">عنوان المرحلة:</label>
+                  <input
+                    type="text"
+                    value={step.title || ""}
+                    onChange={(e) => {
+                      const newProc = [...(editData.process || [])];
+                      newProc[stIdx] = { ...newProc[stIdx], title: e.target.value };
+                      setEditData({ ...editData, process: newProc });
+                    }}
+                    className="w-full bg-[#111] border border-white/15 text-white rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#D4AF37] font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] text-white/70 mb-1 font-bold">وصف المرحلة:</label>
+                  <textarea
+                    rows={3}
+                    value={step.desc || ""}
+                    onChange={(e) => {
+                      const newProc = [...(editData.process || [])];
+                      newProc[stIdx] = { ...newProc[stIdx], desc: e.target.value };
+                      setEditData({ ...editData, process: newProc });
+                    }}
+                    className="w-full bg-[#111] border border-white/15 text-white rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#D4AF37] leading-relaxed"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* زر الحفظ الكبير في أسفل الصفحة */}
+        <div className="p-6 sm:p-8 bg-[#151515] border border-[#D4AF37]/60 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-2xl">
+          <div className="space-y-1">
+            <span className="font-display font-extrabold text-lg text-white block">
+              هل انتهيت من تعديل بيانات ({editData.title})؟
+            </span>
+            <span className="text-xs sm:text-sm text-white/70 leading-relaxed block">
+              اضغط على زر الحفظ والنشر ليتم التحديث في قاعدة البيانات وانعكاس النصوص والمشاريع بالموقع فوراً دون الحاجة لتحديث الصفحة.
+            </span>
+          </div>
+          <button
+            type="submit"
+            className="bg-[#D4AF37] hover:bg-[#C5A030] text-black font-extrabold px-10 py-4 rounded-xl text-base transition-all shadow-[0_0_25px_rgba(212,175,55,0.35)] hover:shadow-[0_0_40px_rgba(212,175,55,0.6)] flex items-center justify-center gap-3 shrink-0 scale-105 hover:scale-110 w-full sm:w-auto"
+          >
+            <Check size={24} />
+            <span>حفظ ونشر التعديلات فوراً بالموقع</span>
+          </button>
+        </div>
+      </form>
+
+      {/* نافذة اختيار أو رفع الوسائط والصور */}
       <MediaPickerModal
         isOpen={mediaPickerOpen}
         onClose={() => setMediaPickerOpen(false)}

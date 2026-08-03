@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useSiteData } from "../contexts/SiteContext";
 import { MediaPickerModal } from "../components/MediaPickerModal";
 import SafeImage from "../components/SafeImage";
+import AdminServices from "./AdminServices";
 
 export default function AdminPages() {
   const { pageConfig = {}, updatePageConfig } = useSiteData();
@@ -312,65 +313,7 @@ export default function AdminPages() {
 
       {/* Tab Content 3: Services Page Banner & Sectors Cards */}
       {activeTab === "services" && (
-        <div className="bg-[#111] border border-[#D4AF37]/20 p-6 lg:p-8 rounded-xl space-y-6">
-          <h3 className="font-display font-bold text-lg text-[#D4AF37] border-b border-white/10 pb-3 flex items-center gap-2">
-            <Layers size={18} />
-            <span>إعدادات صفحة الخدمات وبطاقات القطاعات</span>
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-xs font-bold text-white/80 mb-2">عنوان صفحة الخدمات:</label>
-              <input
-                type="text"
-                value={pageConfig?.servicesPage?.title || ""}
-                onChange={(e) => handleUpdate("servicesPage", null, { title: e.target.value })}
-                className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-lg p-3.5 text-sm focus:outline-none focus:border-[#D4AF37]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-white/80 mb-2">النص الوصفي لصفحة الخدمات:</label>
-              <input
-                type="text"
-                value={pageConfig?.servicesPage?.subtitle || ""}
-                onChange={(e) => handleUpdate("servicesPage", null, { subtitle: e.target.value })}
-                className="w-full bg-black border border-[#D4AF37]/30 text-white rounded-lg p-3.5 text-sm focus:outline-none focus:border-[#D4AF37]"
-              />
-            </div>
-          </div>
-
-          {/* Sectors list */}
-          <div className="pt-4 border-t border-white/10">
-            <h4 className="font-display font-bold text-base text-white mb-4">
-              بطاقات القطاعات الخمسة الأساسية (Sectors Card Backgrounds)
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {(pageConfig?.servicesPage?.sectors || []).map((sec, idx) => (
-                <div key={sec.id || idx} className="bg-black p-4 rounded-xl border border-white/10 flex flex-col justify-between gap-3">
-                  <div>
-                    <span className="text-[10px] text-[#D4AF37] font-bold uppercase block mb-1">القطاع: {sec.id}</span>
-                    <h5 className="text-white font-bold text-sm mb-3">{sec.title}</h5>
-                    <div className="aspect-video w-full rounded-lg overflow-hidden border border-[#D4AF37]/20 bg-black">
-                      <SafeImage
-                        src={sec.image}
-                        alt={sec.title}
-                        fallbackType="portfolio"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setMediaPickerTarget({ tab: "services", key: "sectorImage", index: idx })}
-                    className="w-full bg-white/10 hover:bg-[#D4AF37] hover:text-black text-white py-2 rounded text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <ImageIcon size={14} /> استبدال الصورة
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <AdminServices initialTab="pageDetails" />
       )}
 
       {/* Tab Content 4: Portfolio Page */}
