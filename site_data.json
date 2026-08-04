@@ -195,204 +195,252 @@
   ],
   "projects": [
     {
-      "id": "proj_img1785707995136m8k5pbpng_0",
-      "title": "ديوان ومجلس فاخر",
+      "id": 1,
+      "year": "2026",
+      "image": "https://skezarquinduqpmhehwq.supabase.co/storage/v1/object/public/media/img_1785474170567_on56ym.jpg",
+      "order": 13,
+      "title": "مجلس",
+      "status": "completed",
+      "gallery": [
+        "https://images.unsplash.com/photo-1618221118493-9c48ea92a955?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1618221118493-9c48ea92a955?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1618221118493-9c48ea92a955?auto=format&fit=crop&w=1200&q=80"
+      ],
       "category": "majlis",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785707995136_m8k5pb.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
+      "featured": true,
+      "location": "عدن — اليمن",
+      "materials": [
+        "جبس بورد متعدد الطبقات",
+        "إضاءة LED خفية",
+        "رخام طبيعي",
+        "خشب فاخر",
+        "معادن ذهبية"
+      ],
+      "description": "مجلس عصري بحائط هندسي مزود بإضاءة LED مدمجة، ثريا ذهبية حلقية، طاولات رخامية بإطارات ذهبية، ومفروشات بألوان رمادية وكحلية متناغمة.",
+      "categoryLabel": "مجالس",
+      "category_label": "التصميم والديكور الداخلي",
+      "execution_time": "شهرين",
+      "materials_used": []
     },
     {
-      "id": "proj_img1785708256231rk9ixcpng_1",
-      "title": "فيلا سكنية حديثة",
+      "id": 2,
+      "image": "/assets/images/portfolio_majlis_classic_1784490556781.jpg",
+      "title": "ديوان عربي",
+      "gallery": [
+        "/assets/images/portfolio_majlis_classic_1784490556781.jpg",
+        "/assets/images/portfolio_majlis_classic_1784490556781.jpg",
+        "/assets/images/portfolio_majlis_classic_1784490556781.jpg"
+      ],
+      "category": "majlis",
+      "featured": true,
+      "materials": [
+        "نقوش إسلامية",
+        "مخمل أخضر",
+        "خشب جوزي",
+        "نحاس ذهبي",
+        "رخام بني"
+      ],
+      "description": "ديوان عربي ضخم بسقف جبسي محفور بنقوش إسلامية، إضاءة خفية، مفروشات مخملية خضراء، طاولات خشبية فنية، وعناصر معمارية يمنية أصيلة.",
+      "categoryLabel": "مجالس"
+    },
+    {
+      "id": 3,
+      "image": "/assets/images/portfolio_corridor_classic_1784490570233.jpg",
+      "title": "ممر داخلي",
+      "gallery": [
+        "/assets/images/portfolio_corridor_classic_1784490570233.jpg",
+        "/assets/images/portfolio_corridor_classic_1784490570233.jpg",
+        "/assets/images/portfolio_corridor_classic_1784490570233.jpg"
+      ],
       "category": "villas",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785708256231_rk9ixc.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
+      "featured": true,
+      "materials": [
+        "قوالب جبسية",
+        "إضاءة جدارية نحاسية",
+        "أرضيات خشبية",
+        "مرايا فنية"
+      ],
+      "description": "ممر كلاسيكي بقوالب جدارية احترافية (Boiserie)، إضاءة ذهبية جدارية أنيقة، وقطع فنية تجريدية. اللون الأبيض النقي يعكس النظافة والرقي.",
+      "categoryLabel": "فلل"
     },
     {
-      "id": "proj_img1785708390618i9um14png_2",
-      "title": "شقة سكنية متكاملة",
+      "id": 4,
+      "image": "/assets/images/interior_card_bg_1784515033104.jpg",
+      "title": "شقة سكنية",
+      "gallery": [
+        "/assets/images/interior_card_bg_1784515033104.jpg",
+        "/assets/images/interior_card_bg_1784515033104.jpg",
+        "/assets/images/interior_card_bg_1784515033104.jpg"
+      ],
       "category": "apartments",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785708390618_i9um14.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
+      "featured": false,
+      "materials": [
+        "بديل خشب",
+        "أرضيات باركيه",
+        "إضاءة مخفية"
+      ],
+      "description": "تصميم داخلي متكامل لشقة سكنية يعتمد على الألوان الهادئة وتوظيف الإضاءة الطبيعية لزيادة اتساع المكان.",
+      "categoryLabel": "شقق"
     },
     {
-      "id": "proj_img17857225376379qldb7png_3",
-      "title": "ديكورات وأعمال داخلية",
-      "category": "interior",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722537637_9qldb7.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
-    },
-    {
-      "id": "proj_img1785722579260888oi1png_4",
-      "title": "مكاتب وأعمال تنفيذية",
+      "id": 5,
+      "image": "/assets/images/office_desk.png",
+      "title": "مكتب شركة",
+      "gallery": [
+        "/assets/images/office_desk.png",
+        "/assets/images/office_desk.png",
+        "/assets/images/office_desk.png"
+      ],
       "category": "offices",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722579260_888oi1.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
+      "featured": false,
+      "materials": [
+        "قواطع زجاجية",
+        "ألمنيوم",
+        "إضاءة سقفية"
+      ],
+      "coverImage": "/assets/images/office_desk.png",
+      "description": "تجهيز مكاتب إدارية بأعلى معايير الراحة والتقنية الحديثة، بما يعكس هوية الشركة المهنية.",
+      "categoryLabel": "مكاتب"
     },
     {
-      "id": "proj_img1785722605887b5z5m9png_5",
-      "title": "تصميم لمشاريع تجارية",
-      "category": "commercial",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722605887_b5z5m9.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
-    },
-    {
-      "id": "proj_img1785722634494oqn3g2png_6",
-      "title": "تجهيز المراكز الطبية",
+      "id": 6,
+      "image": "/assets/images/insulation_card_bg_1784517415029.jpg",
+      "title": "تصميم لمركز طبي",
+      "gallery": [
+        "/assets/images/insulation_card_bg_1784517415029.jpg",
+        "/assets/images/insulation_card_bg_1784517415029.jpg",
+        "/assets/images/insulation_card_bg_1784517415029.jpg"
+      ],
       "category": "medical",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722634494_oqn3g2.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
+      "featured": false,
+      "materials": [
+        "أرضيات إيبوكسي",
+        "ديكورات صحية",
+        "عزل صوتي"
+      ],
+      "description": "تنفيذ وتجهيز عيادة أسنان وفق الاشتراطات الصحية مع التركيز على بيئة مريحة للمرضى.",
+      "categoryLabel": "المشاريع الطبية",
+      "category_label": "المشاريع الطبية",
+      "location": "عدن — اليمن",
+      "execution_time": "شهرين",
+      "year": "2026",
+      "status": "completed",
+      "materials_used": [],
+      "order": 13
     },
     {
-      "id": "proj_img1785722672143u1soxnpng_7",
-      "title": "غرف نوم فاخرة",
-      "category": "bedrooms",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722672143_u1soxn.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
+      "id": 7,
+      "image": "/assets/images/aluminum_card_bg_1784516085266.jpg",
+      "title": "تصميم لمحل تجاري",
+      "gallery": [
+        "/assets/images/aluminum_card_bg_1784516085266.jpg",
+        "/assets/images/aluminum_card_bg_1784516085266.jpg",
+        "/assets/images/aluminum_card_bg_1784516085266.jpg"
+      ],
+      "category": "commercial",
+      "featured": false,
+      "materials": [
+        "زجاج سيكوريت",
+        "ديكورات خشبية",
+        "إضاءة مسارية"
+      ],
+      "description": "تنفيذ معرض تجاري بتوزيع إضاءة مدروس لإبراز المنتجات وتصميم واجهة زجاجية جذابة.",
+      "categoryLabel": "مشاريع تجارية"
     },
     {
-      "id": "proj_img1785722699639y3y6mvpng_8",
-      "title": "مطابخ عصرية متطورة",
-      "category": "kitchens",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722699639_y3y6mv.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
-    },
-    {
-      "id": "proj_img17857227318213ngvmcpng_9",
-      "title": "ديوان ومجلس فاخر",
-      "category": "majlis",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722731821_3ngvmc.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
-    },
-    {
-      "id": "proj_img1785722799161qp5mf0png_10",
-      "title": "فيلا سكنية حديثة",
-      "category": "villas",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722799161_qp5mf0.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
-    },
-    {
-      "id": "proj_img17857228312424huwc8png_11",
-      "title": "شقة سكنية متكاملة",
-      "category": "apartments",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722831242_4huwc8.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
-    },
-    {
-      "id": "proj_img1785722859887xzaezcpng_12",
-      "title": "ديكورات وأعمال داخلية",
+      "id": 8,
+      "image": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=80",
+      "title": "أعمال داخلية",
+      "gallery": [
+        "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=80"
+      ],
       "category": "interior",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722859887_xzaezc.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
+      "featured": true,
+      "materials": [
+        "تكسيات خشبية",
+        "إضاءة مخفية",
+        "ألوان دافئة"
+      ],
+      "description": "أعمال داخلية متكاملة تتميز بتكسيات خشبية أنيقة وجداريات عصرية، مع توزيع إضاءة مثالي لإبراز جماليات المساحة.",
+      "categoryLabel": "ديكورات وأعمال داخلية"
     },
     {
-      "id": "proj_img1785722889181mbc1cfpng_13",
-      "title": "مكاتب وأعمال تنفيذية",
-      "category": "offices",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722889181_mbc1cf.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
-    },
-    {
-      "id": "proj_img1785722915263mi30vupng_14",
-      "title": "تصميم لمشاريع تجارية",
-      "category": "commercial",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722915263_mi30vu.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
-    },
-    {
-      "id": "proj_img1785722944535q1votypng_15",
-      "title": "تجهيز المراكز الطبية",
-      "category": "medical",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722944535_q1voty.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
-    },
-    {
-      "id": "proj_img17857229717450ynqabpng_16",
-      "title": "غرف نوم فاخرة",
+      "id": 9,
+      "image": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+      "title": "غرفة نوم",
+      "gallery": [
+        "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80"
+      ],
       "category": "bedrooms",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722971745_0ynqab.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
+      "featured": true,
+      "materials": [
+        "ديكورات خشبية",
+        "إضاءة مخفية",
+        "ألوان هادئة"
+      ],
+      "description": "تصميم داخلي فاخر لغرفة نوم رئيسية يجمع بين الأناقة والراحة مع توزيع إضاءة مدروس.",
+      "categoryLabel": "غرف نوم"
     },
     {
-      "id": "proj_img1785722994306lx08qppng_17",
-      "title": "مطابخ عصرية متطورة",
+      "id": 10,
+      "image": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80",
+      "title": "مكتب شخصي",
+      "gallery": [
+        "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80?g=1",
+        "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80?g=2",
+        "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80?g=3"
+      ],
+      "category": "offices",
+      "featured": true,
+      "materials": [
+        "خشب فاخر",
+        "إضاءة عصرية",
+        "أثاث مريح"
+      ],
+      "description": "تصميم مكتب شخصي فاخر يجمع بين الراحة والإنتاجية مع ديكورات خشبية أنيقة.",
+      "categoryLabel": "مكاتب"
+    },
+    {
+      "id": 11,
+      "image": "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=1200&q=80",
+      "title": "مطبخ حديث",
+      "gallery": [
+        "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=1200&q=80?g=1",
+        "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=1200&q=80?g=2",
+        "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=1200&q=80?g=3"
+      ],
       "category": "kitchens",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785722994306_lx08qp.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
+      "featured": true,
+      "materials": [
+        "خزائن عصرية",
+        "أسطح رخامية",
+        "إضاءة مدمجة"
+      ],
+      "description": "تصميم مطبخ حديث يجمع بين العملية والأناقة مع استغلال أمثل للمساحات وإضاءة مميزة.",
+      "categoryLabel": "المطابخ"
     },
     {
-      "id": "proj_img17857230315453ufxgxpng_18",
-      "title": "ديوان ومجلس فاخر",
-      "category": "majlis",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785723031545_3ufxgx.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٣ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
-    },
-    {
-      "id": "proj_img178579910625986rwizpng_19",
-      "title": "فيلا سكنية حديثة",
-      "category": "villas",
-      "image": "https://utbmrhitlyhzxkwevgft.supabase.co/storage/v1/object/public/site-media/img_1785799106259_86rwiz.png",
-      "client": "عميل خاص",
-      "location": "عدن",
-      "date": "٤ أغسطس ٢٠٢٦",
-      "desc": "تنفيذ وتجهيز ديكورات داخلية وأعمال فنية متكاملة بأعلى معايير الجودة والإتقان الهندسي من عدن للديكور."
+      "id": 12,
+      "image": "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80",
+      "title": "مكتب اداري",
+      "gallery": [
+        "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80?g=1",
+        "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80?g=2",
+        "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80?g=3"
+      ],
+      "category": "offices",
+      "featured": true,
+      "materials": [
+        "أثاث مكتبي فاخر",
+        "تكسيات جدارية",
+        "إضاءة متوازنة"
+      ],
+      "description": "تصميم مكتب إداري راقي يجمع بين الفخامة والعملية لتوفير بيئة عمل ملهمة.",
+      "categoryLabel": "مكاتب"
     }
   ],
   "users": [
@@ -494,7 +542,7 @@
       "subtitle": "استعرض أبرز المشاريع والتحف الفنية التي نفذناها للفلل والمجالس والمشاريع التجارية."
     }
   },
-  "last_updated": "2026-08-04T00:04:56.057Z",
+  "last_updated": "2026-08-04T00:16:36.791Z",
   "cloud_sync_info": {
     "status": "Active",
     "provider": "Supabase PostgreSQL",
