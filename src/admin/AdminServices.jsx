@@ -633,6 +633,20 @@ export default function AdminServices() {
               <span>{editData.heroImage ? "تغيير الصورة أو رفع جديدة" : "اختيار أو رفع صورة"}</span>
             </button>
           </div>
+          <div className="mt-3">
+            <label className="block text-[11px] font-bold text-white/60 mb-1">أو الصق رابط الصورة مباشرة:</label>
+            <input
+              type="text"
+              value={typeof editData.heroImage === "string" && (editData.heroImage.startsWith("http") || editData.heroImage.startsWith("/uploads")) ? editData.heroImage : ""}
+              onChange={(e) => {
+                const url = e.target.value.trim();
+                setEditData((prev) => ({ ...prev, heroImage: url }));
+              }}
+              className="w-full bg-black border border-white/15 text-white/80 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#D4AF37] font-mono dir-ltr text-right placeholder:text-white/25"
+              placeholder="الصق رابط الصورة هنا مثل: https://... أو /uploads/..."
+              dir="ltr"
+            />
+          </div>
         </div>
 
         {/* 2. القسم الثاني: النبذة التفصيلية عن الخدمة وصورتها التوضيحية (About Section) */}
@@ -686,6 +700,20 @@ export default function AdminServices() {
               <ImageIcon size={16} />
               <span>{editData.aboutImage ? "تغيير الصورة أو رفع جديدة" : "اختيار أو رفع صورة"}</span>
             </button>
+          </div>
+          <div className="mt-3">
+            <label className="block text-[11px] font-bold text-white/60 mb-1">أو الصق رابط الصورة مباشرة:</label>
+            <input
+              type="text"
+              value={typeof editData.aboutImage === "string" && (editData.aboutImage.startsWith("http") || editData.aboutImage.startsWith("/uploads")) ? editData.aboutImage : ""}
+              onChange={(e) => {
+                const url = e.target.value.trim();
+                setEditData((prev) => ({ ...prev, aboutImage: url }));
+              }}
+              className="w-full bg-black border border-white/15 text-white/80 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#D4AF37] font-mono dir-ltr text-right placeholder:text-white/25"
+              placeholder="الصق رابط الصورة هنا مثل: https://... أو /uploads/..."
+              dir="ltr"
+            />
           </div>
         </div>
 
@@ -757,6 +785,24 @@ export default function AdminServices() {
                       <Edit2 size={15} />
                       <span>استبدال / تعديل الصورة</span>
                     </button>
+
+                    <div>
+                      <input
+                        type="text"
+                        value={typeof imgUrl === "string" && (imgUrl.startsWith("http") || imgUrl.startsWith("/uploads")) ? imgUrl : ""}
+                        onChange={(e) => {
+                          const url = e.target.value.trim();
+                          setEditData((prev) => {
+                            const newG = [...(prev.gallery || [])];
+                            newG[gIdx] = url;
+                            return { ...prev, gallery: newG };
+                          });
+                        }}
+                        className="w-full bg-black border border-white/15 text-white/80 rounded-xl p-2 text-[11px] focus:outline-none focus:border-[#D4AF37] font-mono dir-ltr text-right placeholder:text-white/25"
+                        placeholder="الصق رابط الصورة هنا..."
+                        dir="ltr"
+                      />
+                    </div>
 
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1 flex-1">

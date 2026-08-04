@@ -8,6 +8,7 @@ import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import { BRAND } from "@/data/content";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import SafeImage from "@/components/SafeImage";
+import { useSiteData } from "@/contexts/SiteContext";
 
 import interiorCardBg from "@/assets/images/interior_card_bg_1784515033104.jpg";
 import aluminumCardBg from "@/assets/images/aluminum_card_bg_1784516085266.jpg";
@@ -170,10 +171,30 @@ const serviceData = {
 export default function ServiceTemplate() {
   const { serviceId } = useParams();
   const navigate = useNavigate();
+  const { pageConfig = {} } = useSiteData();
 
-  const data = serviceData[serviceId] || {
-    title: "عنوان الخدمة",
-    subtitle: "Service Template",
+  // الدمج: بيانات قاعدة البيانات (من لوحة التحكم) تتفوق على البيانات الثابتة
+  const hardcoded = serviceData[serviceId] || {};
+  const dbData = pageConfig?.serviceDetails?.[serviceId] || {};
+
+  // دمج ذكي: قاعدة البيانات تكسب إذا كانت قيمها موجودة وصحيحة
+  const isValidUrl = (v) => v && typeof v === "string" && (v.startsWith("http") || v.startsWith("/uploads"));
+
+  const data = {
+    ...hardcoded,
+    ...dbData,
+    // الصور: إذا كانت قاعدة البيانات تحتوي على رابط URL صالح، استخدمه. وإلا أبقِ صورة الكود الأصلية
+    heroImage: isValidUrl(dbData.heroImage) ? dbData.heroImage : (hardcoded.heroImage || ""),
+    aboutImage: isValidUrl(dbData.aboutImage) ? dbData.aboutImage : (hardcoded.aboutImage || ""),
+    // المعرض: إذا قاعدة البيانات تحتوي على معرض، استخدمه. وإلا أبقِ الأصلي
+    gallery: (Array.isArray(dbData.gallery) && dbData.gallery.length > 0) ? dbData.gallery : (hardcoded.gallery || []),
+    subServices: (Array.isArray(dbData.subServices) && dbData.subServices.length > 0) ? dbData.subServices : (hardcoded.subServices || []),
+    features: (Array.isArray(dbData.features) && dbData.features.length > 0) ? dbData.features : (hardcoded.features || []),
+    process: (Array.isArray(dbData.process) && dbData.process.length > 0) ? dbData.process : (hardcoded.process || []),
+    title: dbData.title || hardcoded.title || "عنوان الخدمة",
+    subtitle: dbData.subtitle || hardcoded.subtitle || "Service Template",
+    description: dbData.description || hardcoded.description || "",
+    about: dbData.about || hardcoded.about || "",
   };
 
   useEffect(() => {
@@ -349,7 +370,8 @@ export default function ServiceTemplate() {
               
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {data.features.map((feat, idx) => {
-                  const Icon = feat.icon;
+                  const ICON_MAP = { ShieldCheck, PencilRuler, Clock, Sparkles, CheckCircle2 };
+                  const Icon = typeof feat.icon === "string" ? (ICON_MAP[feat.icon] || Sparkles) : (feat.icon || Sparkles);
                   return (
                     <motion.div 
                       key={idx}
