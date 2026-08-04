@@ -27,40 +27,70 @@ import { toast } from "sonner";
 import { useSiteData } from "../contexts/SiteContext";
 import { MediaPickerModal } from "../components/MediaPickerModal";
 import SafeImage from "../components/SafeImage";
+
+import interiorCardBg from "../assets/images/interior_card_bg_1784515033104.jpg";
+import aluminumCardBg from "../assets/images/aluminum_card_bg_1784516085266.jpg";
+import carpentryCardBg from "../assets/images/carpentry_card_bg_1784516477737.jpg";
+import commercialCardBg from "../assets/images/interior_card_bg_1784515033104.jpg";
+import insulationCardBg from "../assets/images/insulation_card_bg_1784517415029.jpg";
+import heroImg from "../assets/images/luxury_interior_hero_1784488795242.jpg";
+import aboutImg from "../assets/images/luxury_interior_about_1784488806775.jpg";
+import aboutSlide2 from "../assets/images/luxury_about_slide2_1784490484658.jpg";
+import aboutSlide3 from "../assets/images/luxury_about_slide3_1784490498052.jpg";
+import aboutSlide4 from "../assets/images/luxury_about_slide4_1784490510728.jpg";
+import portfolioMajlisModern from "../assets/images/portfolio_majlis_modern_1784490542736.jpg";
+import portfolioMajlisClassic from "../assets/images/portfolio_majlis_classic_1784490556781.jpg";
+import portfolioCorridorClassic from "../assets/images/portfolio_corridor_classic_1784490570233.jpg";
+
 const DEFAULT_SERVICE_DETAILS = {
   "interior-design": {
     title: "الديكور الداخلي والتشطيبات",
     subtitle: "Interior Design & Fit-Out",
     description: "نقدم حلولاً متكاملة للديكور الداخلي والتشطيبات الفاخرة التي تجمع بين الجمال والوظيفة لتعكس ذوقك الرفيع.",
     about: "قطاع الديكور الداخلي والتشطيبات في عدن للديكور يمثل جوهر الإبداع والتميز. نحن نهتم بأدق التفاصيل في تحويل الفراغات إلى مساحات تنبض بالحياة، باستخدام أحدث التقنيات وأجود المواد لضمان تنفيذ أعمال تتجاوز توقعات عملائنا، سواء في المشاريع السكنية أو التجارية.",
-    heroImage: "/uploads/default_interior.jpg",
-    aboutImage: "/uploads/default_interior_about.jpg",
-    gallery: [],
+    heroImage: interiorCardBg,
+    aboutImage: portfolioMajlisModern,
+    gallery: [portfolioMajlisModern, portfolioMajlisClassic, portfolioCorridorClassic],
     subServices: [
       { id: "ceilings", title: "الأسقف المعلقة والديكورية", items: ["جبسمبورد", "جبس مغربي"] },
       { id: "wall-panels", title: "تكسيات الجدران", items: ["بديل شيبورد", "بديل رخام", "بديل خشب", "فوم"] },
       { id: "painting", title: "الدهانات والتشطيبات النهائية", items: [] },
-      { id: "lighting", title: "أنظمة الإضاءة الحديثة", items: ["سبوت لايت", "داون لايت", "إضاءة مخفية"] }
+      { id: "lighting", title: "أنظمة الإضاءة الحديثة", items: ["سبوت لايت", "داون لايت", "إضاءة مخفية", "LED Profile", "Magnetic Track"] }
     ],
     features: [
       { icon: "ShieldCheck", title: "جودة لا تضاهى", desc: "نستخدم أفضل الخامات لضمان استدامة وجمال التنفيذ المتقن." },
-      { icon: "PencilRuler", title: "تصاميم مبتكرة", desc: "تصاميم عصرية وكلاسيكية تناسب جميع الأذواق." },
-      { icon: "Clock", title: "دقة في المواعيد", desc: "التزام كامل بتسليم المشاريع في الوقت المتفق عليه." },
-      { icon: "Sparkles", title: "إشراف هندسي متكامل", desc: "متابعة دقيقة لكل مرحلة لضمان التنفيذ بأعلى المعايير." }
+      { icon: "PencilRuler", title: "تصاميم مبتكرة", desc: "تصاميم عصرية وكلاسيكية تناسب جميع الأذواق وتستغل المساحات بذكاء." },
+      { icon: "Clock", title: "دقة في المواعيد", desc: "التزام كامل بتسليم المشاريع في الوقت المتفق عليه دون تأخير." },
+      { icon: "Sparkles", title: "إشراف هندسي متكامل", desc: "متابعة دقيقة لكل مرحلة لضمان التنفيذ بأعلى المعايير الهندسية." }
     ],
     process: [
-      { step: "01", title: "المعاينة والاستشارة", desc: "نقوم بزيارة الموقع وتقديم استشارات هندسية مبدئية." },
-      { step: "02", title: "التصميم والتخطيط", desc: "نعد المخططات الهندسية والتصاميم ثلاثية الأبعاد (3D)." },
-      { step: "03", title: "التنفيذ والإشراف", desc: "يبدأ فريقنا بالتنفيذ تحت إشراف هندسي دقيق." },
-      { step: "04", title: "التسليم النهائي", desc: "نسلمك المشروع جاهزاً ومطابقاً لأعلى معايير التشطيب الفاخر." }
+      { step: "01", title: "المعاينة والاستشارة", desc: "نقوم بزيارة الموقع وتقديم استشارات هندسية مبدئية لفهم متطلباتك ورؤيتك بوضوح." },
+      { step: "02", title: "التصميم والتخطيط", desc: "نعد المخططات الهندسية والتصاميم ثلاثية الأبعاد (3D) لتراها واقعاً قبل التنفيذ." },
+      { step: "03", title: "التنفيذ والإشراف", desc: "يبدأ فريقنا بالتنفيذ تحت إشراف هندسي دقيق لضمان مطابقة التصميم وجودة العمل." },
+      { step: "04", title: "التسليم النهائي", desc: "نسلمك المشروع جاهزاً ومطابقاً لأعلى معايير التشطيب الفاخر، لتستمتع بمساحتك الجديدة." }
     ]
   },
   "aluminum-facades": {
     title: "أعمال الألمنيوم والواجهات",
     subtitle: "Aluminum & Facades",
     description: "نصمم وننفذ أرقى واجهات الألمنيوم والزجاج التي تضفي طابعاً عصرية وقيمة جمالية وهندسية لمشروعك.",
-    about: "يعتبر قطاع الألمنيوم والواجهات من أهم القطاعات التي تبرز هوية المبنى. في عدن للديكور، نوفر حلولاً مبتكرة للواجهات الزجاجية وأعمال الكلادنج والشبابيك.",
-    heroImage: "", aboutImage: "", gallery: [], subServices: [], features: [], process: [
+    about: "يعتبر قطاع الألمنيوم والواجهات من أهم القطاعات التي تبرز هوية المبنى. في عدن للديكور، نوفر حلولاً مبتكرة للواجهات الزجاجية وأعمال الكلادنج والشبابيك، معتمدين على معايير الجودة العالمية لضمان العزل الحراري والصوتي والمظهر العصري الجذاب.",
+    heroImage: aluminumCardBg,
+    aboutImage: aluminumCardBg,
+    gallery: [aluminumCardBg, heroImg, aboutSlide2],
+    subServices: [
+      { id: "windows", title: "شبابيك ألمنيوم", items: [] },
+      { id: "doors", title: "أبواب ألمنيوم", items: [] },
+      { id: "glass", title: "واجهات زجاجية", items: [] },
+      { id: "cladding", title: "أعمال الكلادنج", items: [] }
+    ],
+    features: [
+      { icon: "ShieldCheck", title: "جودة وأمان", desc: "استخدام قطاعات ألمنيوم وزجاج عالي الجودة ومقاوم للعوامل الجوية." },
+      { icon: "PencilRuler", title: "تصاميم عصرية", desc: "واجهات زجاجية وكلادنج تعكس التطور وتضيف لمسة جمالية للمبنى." },
+      { icon: "Clock", title: "دقة التنفيذ", desc: "تركيب متقن يضمن العزل المائي والحراري والصوتي بأعلى المعايير." },
+      { icon: "Sparkles", title: "إشراف هندسي", desc: "متابعة دقيقة لضمان التنفيذ وفقاً للمواصفات الهندسية العالمية." }
+    ],
+    process: [
       { step: "01", title: "المعاينة وأخذ القياسات", desc: "زيارة الموقع لرفع المقاسات بدقة ودراسة المتطلبات الهندسية." },
       { step: "02", title: "التصميم والاعتماد", desc: "تقديم المخططات التفصيلية لاختيار القطاعات وألوان الكلادنج." },
       { step: "03", title: "التصنيع والتجهيز", desc: "تفصيل الألمنيوم والزجاج في ورشنا باستخدام أحدث التقنيات." },
@@ -71,8 +101,25 @@ const DEFAULT_SERVICE_DETAILS = {
     title: "النجارة والديكور الخشبي المخصص",
     subtitle: "Custom Carpentry",
     description: "أعمال نجارة مخصصة وديكورات خشبية فريدة تلبي احتياجاتك وتضفي الدفء والأناقة على مساحاتك.",
-    about: "نقدم في قطاع النجارة والديكور الخشبي أعمالاً فنية متقنة تُصنع خصيصاً لتلائم مساحتك.",
-    heroImage: "", aboutImage: "", gallery: [], subServices: [], features: [], process: [
+    about: "نقدم في قطاع النجارة والديكور الخشبي أعمالاً فنية متقنة تُصنع خصيصاً لتلائم مساحتك. من الأبواب الفاخرة إلى الخزائن الجدارية والمكتبات، نستخدم أفضل أنواع الأخشاب لنضمن المتانة والجمال في كل قطعة ننتجها.",
+    heroImage: carpentryCardBg,
+    aboutImage: carpentryCardBg,
+    gallery: [carpentryCardBg, portfolioMajlisClassic, aboutSlide3],
+    subServices: [
+      { id: "wooden-doors", title: "أبواب خشبية", items: [] },
+      { id: "decor", title: "ديكورات خشبية ثابتة", items: [] },
+      { id: "tv-units", title: "مكتبات التلفزيون", items: [] },
+      { id: "cabinets", title: "خزائن الحائط", items: [] },
+      { id: "bed-backs", title: "خلفيات السرير", items: [] },
+      { id: "desks", title: "مكاتب العمل", items: [] }
+    ],
+    features: [
+      { icon: "ShieldCheck", title: "أخشاب فاخرة", desc: "انتقاء أفضل أنواع الأخشاب الطبيعية والصناعية لضمان المتانة والجمال." },
+      { icon: "PencilRuler", title: "تفصيل مخصص", desc: "تصنيع قطع فريدة تتناسب تماماً مع مساحتك وذوقك الخاص." },
+      { icon: "Sparkles", title: "تشطيبات راقية", desc: "دهانات ومعالجات خشبية عالية الجودة تبرز جمال الخشب وتحميه." },
+      { icon: "Clock", title: "التزام بالمواعيد", desc: "تسليم الأعمال الخشبية في الوقت المحدد مع الحفاظ على أعلى معايير الجودة." }
+    ],
+    process: [
       { step: "01", title: "الاستشارة والتصميم", desc: "فهم احتياجاتك وتقديم تصاميم أولية للقطع الخشبية المطلوبة." },
       { step: "02", title: "رفع المقاسات", desc: "زيارة الموقع لأخذ المقاسات الدقيقة واختيار نوع الخشب والتشطيب." },
       { step: "03", title: "التصنيع الحرفي", desc: "تنفيذ التصاميم في منجرتنا على أيدي حرفيين مهرة باستخدام معدات متطورة." },
@@ -83,8 +130,22 @@ const DEFAULT_SERVICE_DETAILS = {
     title: "المشاريع التجارية والطبية",
     subtitle: "Commercial & Medical Projects",
     description: "تصميم وتنفيذ المشاريع التجارية والطبية بمعايير عالمية تضمن الكفاءة التشغيلية وتجربة مستخدم مريحة.",
-    about: "ندرك في قطاع المشاريع التجارية والطبية أهمية توفير بيئة عمل مريحة ومطابقة للاشتراطات الصحية والمهنية.",
-    heroImage: "", aboutImage: "", gallery: [], subServices: [], features: [], process: [
+    about: "ندرك في قطاع المشاريع التجارية والطبية أهمية توفير بيئة عمل مريحة ومطابقة للاشتراطات الصحية والمهنية. نقدم خدمات متكاملة لتجهيز العيادات، المكاتب، والمعارض التجارية بأعلى معايير الجودة، مع التركيز على الاستغلال الأمثل للمساحات.",
+    heroImage: commercialCardBg,
+    aboutImage: commercialCardBg,
+    gallery: [commercialCardBg, portfolioCorridorClassic, aboutSlide4],
+    subServices: [
+      { id: "offices", title: "تصميم وتنفيذ المكاتب والشركات", items: [] },
+      { id: "shops", title: "المحلات والمعارض التجارية", items: [] },
+      { id: "clinics", title: "العيادات والمشاريع الطبية", items: [] }
+    ],
+    features: [
+      { icon: "PencilRuler", title: "استغلال المساحات", desc: "تصميم ذكي يعظم الاستفادة من المساحات لتحقيق الكفاءة التشغيلية." },
+      { icon: "ShieldCheck", title: "معايير صحية", desc: "تنفيذ دقيق يطابق اشتراطات الأمن والسلامة للمعايير الصحية." },
+      { icon: "Sparkles", title: "هوية بصرية متكاملة", desc: "تصاميم تعكس هوية علامتك التجارية وتوفر تجربة مميزة للعملاء." },
+      { icon: "Clock", title: "إدارة احترافية", desc: "تنفيذ المشاريع ضمن الجدول الزمني والميزانية المحددة لضمان سرعة التشغيل." }
+    ],
+    process: [
       { step: "01", title: "دراسة المشروع", desc: "تحليل نشاطك التجاري أو الطبي لفهم المتطلبات التشغيلية والهوية البصرية." },
       { step: "02", title: "التصميم وتوزيع المساحات", desc: "إعداد مخططات تفصيلية تضمن سهولة الحركة والجماليات." },
       { step: "03", title: "التنفيذ المتكامل", desc: "تولي كافة أعمال التشطيب والتجهيز باحترافية ووفقاً للجدول الزمني." },
@@ -92,11 +153,31 @@ const DEFAULT_SERVICE_DETAILS = {
     ]
   },
   "insulation-waterproofing": {
-    title: "العوازل والترميم الإنشائي",
+    title: "العزل والترميم الإنشائي",
     subtitle: "Waterproofing & Insulation",
     description: "حلول متقدمة للعوازل المائية والحرارية والترميم الإنشائي لضمان حماية وسلامة مبناك على المدى الطويل.",
-    about: "قطاع العوازل والترميم الإنشائي يهدف إلى حماية المباني من العوامل الجوية وإطالة عمرها الافتراضي.",
-    heroImage: "", aboutImage: "", gallery: [], subServices: [], features: [], process: [
+    about: "قطاع العوازل والترميم الإنشائي يهدف إلى حماية المباني من العوامل الجوية وإطالة عمرها الافتراضي. نستخدم أحدث التقنيات في العزل المائي والحراري والصوتي، بالإضافة إلى أنظمة الإيبوكسي المتطورة، لضمان بيئة آمنة وصحية ومستدامة.",
+    heroImage: insulationCardBg,
+    aboutImage: insulationCardBg,
+    gallery: [insulationCardBg, aboutImg, portfolioMajlisModern],
+    subServices: [
+      { id: "water", title: "العزل المائي", items: [] },
+      { id: "roofs", title: "عزل الأسطح والأسقف", items: [] },
+      { id: "tanks", title: "عزل خزانات المياه", items: [] },
+      { id: "thermal", title: "العزل الحراري", items: [] },
+      { id: "sound", title: "العزل الصوتي", items: [] },
+      { id: "epoxy", title: "أنظمة الإيبوكسي", items: ["إيبوكسي صناعي", "إيبوكسي طبي", "إيبوكسي ديكوري"] },
+      { id: "cracks", title: "ترميم ومعالجة التشققات", items: [] },
+      { id: "facades", title: "ترميم الواجهات", items: [] },
+      { id: "polishing", title: "جلي البلاط وتلميعه", items: [] }
+    ],
+    features: [
+      { icon: "ShieldCheck", title: "حماية متكاملة", desc: "حلول عزل متطورة تحمي مبناك من تسربات المياه والحرارة." },
+      { icon: "Sparkles", title: "مواد معتمدة", desc: "استخدام أحدث مواد العزل المطابقة للمواصفات العالمية." },
+      { icon: "Clock", title: "استدامة وضمان", desc: "تنفيذ احترافي يطيل العمر الافتراضي للمبنى مع تقديم ضمانات." },
+      { icon: "PencilRuler", title: "كفاءة وحرفية", desc: "فريق متخصص في معالجة التشققات والترميم الجذري للعيوب الإنشائية." }
+    ],
+    process: [
       { step: "01", title: "الفحص والاختبار", desc: "فحص المبنى لتحديد أماكن التسرب أو التشققات بدقة وتقييم الهيكل." },
       { step: "02", title: "اختيار الحل الأنسب", desc: "تحديد نوع العزل أو طريقة الترميم المناسبة وتقديم خطة عمل." },
       { step: "03", title: "التنفيذ والمعالجة", desc: "تطبيق مواد العزل أو أعمال الترميم بخطوات فنية مدروسة." },
@@ -175,10 +256,23 @@ function getSectorData(serviceId, pageConfig) {
     ],
   };
 
+  const isInvalidImage = (img) => !img || typeof img !== "string" || img.trim() === "" || img.startsWith("/uploads/");
+
+  const heroImage = isInvalidImage(customData.heroImage) ? defaultData.heroImage : customData.heroImage;
+  const aboutImage = isInvalidImage(customData.aboutImage) ? defaultData.aboutImage : customData.aboutImage;
+
+  const rawGallery = customData.gallery !== undefined && Array.isArray(customData.gallery) && customData.gallery.length > 0
+    ? customData.gallery
+    : (defaultData.gallery || []);
+
+  const gallery = rawGallery.map(img => isInvalidImage(img) ? (defaultData.heroImage || img) : img);
+
   return {
     ...defaultData,
     ...customData,
-    gallery: customData.gallery !== undefined ? customData.gallery : (defaultData.gallery || []),
+    heroImage,
+    aboutImage,
+    gallery,
     subServices: customData.subServices !== undefined ? customData.subServices : (defaultData.subServices || []),
     features: customData.features !== undefined ? customData.features : (defaultData.features || []),
     process: customData.process !== undefined ? customData.process : (defaultData.process || []),
